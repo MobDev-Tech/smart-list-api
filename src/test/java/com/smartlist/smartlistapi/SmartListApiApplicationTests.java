@@ -1,6 +1,7 @@
 package com.smartlist.smartlistapi;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -12,17 +13,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@DisplayName("Testes de integração da aplicação Smart List")
 class SmartListApiApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
-	void contextLoads() {
+	@DisplayName("Deve carregar o contexto da aplicação")
+	void carregaContextoDaAplicacao() {
 	}
 
 	@Test
-	void openApiDocumentExposesBusinessEndpoints() throws Exception {
+	@DisplayName("Deve disponibilizar os endpoints de negócio no documento OpenAPI")
+	void documentoOpenApiDisponibilizaEndpointsDeNegocio() throws Exception {
 		mockMvc.perform(get("/v3/api-docs"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.info.title").value("Smart List API"))
