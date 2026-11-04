@@ -52,7 +52,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Deve definir prazo de trinta minutos para a soneca")
-    void aplicaSonecaDefinePrazoDeTrintaMinutos() {
+    void dadaOpcaoDeTrintaMinutos_quandoSonecaAplicada_entaoDefinirPrazoDeTrintaMinutos() {
         when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
         when(snoozeRepository.save(any(SnoozeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         LocalDateTime before = LocalDateTime.now();
@@ -71,7 +71,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Deve aplicar soneca indefinida sem definir prazo")
-    void aplicaSonecaIndefinidaSemDefinirPrazo() {
+    void dadaOpcaoIndefinida_quandoSonecaAplicada_entaoNaoDefinirPrazo() {
         when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
         when(snoozeRepository.save(any(SnoozeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -85,7 +85,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Deve cancelar a soneca e reativar o monitoramento")
-    void cancelaSonecaEReativaMonitoramento() {
+    void dadaSonecaAtiva_quandoCancelada_entaoReativarMonitoramento() {
         SnoozeEntity snooze = SnoozeEntity.builder()
                 .id(1L)
                 .active(true)
@@ -106,7 +106,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Não deve notificar quando não há itens pendentes")
-    void avaliaGatilhoNaoNotificaQuandoNaoHaItensPendentes() {
+    void dadaListaSemItensPendentes_quandoGatilhoAvaliado_entaoNaoNotificar() {
         when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(0));
 
         NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(request());
@@ -120,7 +120,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Não deve notificar durante uma soneca indefinida")
-    void avaliaGatilhoNaoNotificaDuranteSonecaIndefinida() {
+    void dadaSonecaIndefinidaAtiva_quandoGatilhoAvaliado_entaoNaoNotificar() {
         when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(2));
         when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
                 SnoozeEntity.builder().active(true).option(SnoozeOptionEnum.INDEFINITE).build()));
@@ -135,7 +135,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Não deve notificar durante uma soneca temporária")
-    void avaliaGatilhoNaoNotificaDuranteSonecaTemporaria() {
+    void dadaSonecaTemporariaAtiva_quandoGatilhoAvaliado_entaoNaoNotificar() {
         LocalDateTime deadline = LocalDateTime.now().plusMinutes(10);
         when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(2));
         when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
@@ -155,7 +155,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Não deve notificar quando o dispositivo está no perímetro")
-    void avaliaGatilhoNaoNotificaQuandoDispositivoEstaNoPerimetro() {
+    void dadoDispositivoDentroDoPerimetro_quandoGatilhoAvaliado_entaoNaoNotificar() {
         when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(2));
         when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
         when(residenceService.checkGeofenceStatus(any())).thenReturn(
@@ -170,7 +170,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Deve notificar quando o dispositivo está fora e há itens pendentes")
-    void avaliaGatilhoNotificaQuandoEstaForaDoPerimetroEHaItensPendentes() {
+    void dadosItensPendentesEDispositivoForaDoPerimetro_quandoGatilhoAvaliado_entaoNotificar() {
         ShoppingItemResponseDTO pendingItem = new ShoppingItemResponseDTO(
                 1L, "Leite", "1 L", null, false, null);
         ShoppingListGroupedDTO items = new ShoppingListGroupedDTO(1, List.of(pendingItem), 0, List.of());
@@ -189,7 +189,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("Deve definir a soneca para amanhã às oito da manhã")
-    void aplicaSonecaParaAmanhaDefinePrazoAsOitoDaManha() {
+    void dadaOpcaoAmanhaDeManha_quandoSonecaAplicada_entaoDefinirPrazoAsOitoHoras() {
         when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
         when(snoozeRepository.save(any(SnoozeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
