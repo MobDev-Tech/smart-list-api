@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    container_name: smart-list-api
+    ports:
+      - "8080:8080"
+    volumes:
+      # MAPEAMENTO DE PASTA: Isola o arquivo de banco dentro de um diretório
+      - ./sqlite_data:/app/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: always
