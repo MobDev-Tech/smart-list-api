@@ -36,7 +36,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve retornar a residência configurada")
-    void consultaResidenciaRetornaResidenciaConfigurada() {
+    void dadaResidenciaConfigurada_quandoConsultada_entaoRetornarSeusDados() {
         ResidenceEntity residence = residence();
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence));
 
@@ -50,7 +50,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve lançar exceção quando não há residência configurada")
-    void consultaResidenciaLancaExcecaoQuandoNaoHaResidenciaConfigurada() {
+    void dadaResidenciaNaoConfigurada_quandoConsultada_entaoLancarExcecao() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> service.getResidence());
@@ -58,7 +58,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve salvar residência nova e ativar geofence por padrão")
-    void salvaResidenciaNovaEAtivaGeofencePorPadrao() {
+    void dadaNovaResidencia_quandoSalvaSemEstadoExplicito_entaoAtivarGeofencePorPadrao() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
         when(repository.save(any(ResidenceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         ResidenceRequestDTO request = new ResidenceRequestDTO(
@@ -74,7 +74,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve atualizar residência existente e manter geofence desativado")
-    void atualizaResidenciaExistenteEPreservaGeofenceDesativado() {
+    void dadaResidenciaExistente_quandoAtualizadaComGeofenceDesativado_entaoPreservarEstadoDesativado() {
         ResidenceEntity residence = residence();
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence));
         when(repository.save(residence)).thenReturn(residence);
@@ -92,7 +92,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve indicar que o dispositivo está dentro do perímetro")
-    void verificaGeofenceRetornaDentroDoPerimetroParaCoordenadasDaResidencia() {
+    void dadaResidenciaConfigurada_quandoCoordenadasCorrespondem_entaoIndicarDentroDoPerimetro() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence()));
 
         GeofenceCheckResponseDTO result = service.checkGeofenceStatus(
@@ -106,7 +106,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve calcular a distância e indicar que o dispositivo está fora do perímetro")
-    void verificaGeofenceCalculaDistanciaERetornaForaDoPerimetroParaCoordenadasDistantes() {
+    void dadaResidenciaConfigurada_quandoCoordenadasEstaoDistantes_entaoCalcularDistanciaEIndicarFora() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence()));
 
         GeofenceCheckResponseDTO result = service.checkGeofenceStatus(
@@ -120,7 +120,7 @@ class ResidenceServiceTest {
 
     @Test
     @DisplayName("Deve lançar exceção ao verificar geofence sem residência configurada")
-    void verificaGeofenceLancaExcecaoQuandoNaoHaResidenciaConfigurada() {
+    void dadaResidenciaNaoConfigurada_quandoGeofenceVerificado_entaoLancarExcecao() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () ->
