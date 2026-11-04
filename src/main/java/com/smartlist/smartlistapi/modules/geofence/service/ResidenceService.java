@@ -19,7 +19,7 @@ public class ResidenceService {
 
     private final ResidenceRepository repository;
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
     public ResidenceResponseDTO getResidence() {
         ResidenceEntity entity = repository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new ResourceNotFoundException("Residência ainda não configurada."));
