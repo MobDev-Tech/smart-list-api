@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:target/integration-tests.db
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
