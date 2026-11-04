@@ -41,7 +41,7 @@ class UserSettingsServiceTest {
 
     @Test
     @DisplayName("Deve criar configurações padrão quando não existem")
-    void consultaConfiguracoesCriaValoresPadraoQuandoNaoExistem() {
+    void dadasConfiguracoesInexistentes_quandoConsultadas_entaoCriarValoresPadrao() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
         when(repository.save(any(UserSettingsEntity.class))).thenAnswer(invocation -> {
             UserSettingsEntity saved = invocation.getArgument(0);
@@ -60,7 +60,7 @@ class UserSettingsServiceTest {
 
     @Test
     @DisplayName("Deve atualizar e salvar as configurações existentes")
-    void atualizaEArmazenaConfiguracoesExistentes() {
+    void dadasConfiguracoesExistentes_quandoAtualizadas_entaoPersistirAlteracoes() {
         UserSettingsEntity settings = settings();
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings));
         when(repository.save(settings)).thenReturn(settings);
@@ -78,7 +78,7 @@ class UserSettingsServiceTest {
 
     @Test
     @DisplayName("Deve indicar que o sistema está pronto com permissões e residência configuradas")
-    void consultaDiagnosticoIndicaSistemaProntoQuandoPermissoesEResidenciaEstaoConfiguradas() {
+    void dadasPermissoesEResidenciaConfiguradas_quandoDiagnosticoConsultado_entaoIndicarSistemaPronto() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings()));
         when(residenceService.getResidence()).thenReturn(
                 new ResidenceResponseDTO(1L, "Rua das Flores", null, -23.5, -46.6, 150, true));
@@ -92,7 +92,7 @@ class UserSettingsServiceTest {
 
     @Test
     @DisplayName("Deve indicar que o sistema não está pronto sem residência configurada")
-    void consultaDiagnosticoIndicaSistemaNaoProntoQuandoResidenciaNaoEstaConfigurada() {
+    void dadaResidenciaNaoConfigurada_quandoDiagnosticoConsultado_entaoIndicarSistemaNaoPronto() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings()));
         when(residenceService.getResidence()).thenThrow(
                 new ResourceNotFoundException("Residência ainda não configurada."));
@@ -106,7 +106,7 @@ class UserSettingsServiceTest {
 
     @Test
     @DisplayName("Deve informar quando o geofence está desativado")
-    void consultaDiagnosticoIndicaGeofenceDesativado() {
+    void dadaResidenciaComGeofenceDesativado_quandoDiagnosticoConsultado_entaoInformarMonitoramentoDesativado() {
         when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings()));
         when(residenceService.getResidence()).thenReturn(
                 new ResidenceResponseDTO(1L, "Rua das Flores", null, -23.5, -46.6, 150, false));
