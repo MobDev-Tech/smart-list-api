@@ -26,16 +26,19 @@ public class ShoppingItemController {
 
     @GetMapping
     @Operation(summary = "Listar itens agrupados por situação")
-    public ResponseEntity<ShoppingListGroupedDTO> getAllItemsGrouped() {
-        return ResponseEntity.ok(service.getGroupedItems());
+    public ResponseEntity<ShoppingListGroupedDTO> getAllItemsGrouped(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        return ResponseEntity.ok(service.getGroupedItems(deviceId));
     }
 
     @PostMapping
     @Operation(summary = "Adicionar item à lista")
     @ApiResponse(responseCode = "400", description = "Dados do item inválidos",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<ShoppingItemResponseDTO> createItem(@Valid @RequestBody ShoppingItemRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.createItem(dto));
+    public ResponseEntity<ShoppingItemResponseDTO> createItem(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @Valid @RequestBody ShoppingItemRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.createItem(deviceId, dto));
     }
 
     @PutMapping("/{id}")
@@ -44,31 +47,39 @@ public class ShoppingItemController {
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     @ApiResponse(responseCode = "404", description = "Item não encontrado",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<ShoppingItemResponseDTO> updateItem(@PathVariable Long id, @Valid @RequestBody ShoppingItemRequestDTO dto) {
-        return ResponseEntity.ok(service.updateItem(id, dto));
+    public ResponseEntity<ShoppingItemResponseDTO> updateItem(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @PathVariable Long id,
+            @Valid @RequestBody ShoppingItemRequestDTO dto) {
+        return ResponseEntity.ok(service.updateItem(deviceId, id, dto));
     }
 
     @PatchMapping("/{id}/toggle")
     @Operation(summary = "Alternar conclusão do item")
     @ApiResponse(responseCode = "404", description = "Item não encontrado",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<ShoppingItemResponseDTO> toggleItem(@PathVariable Long id) {
-        return ResponseEntity.ok(service.toggleItemCompletion(id));
+    public ResponseEntity<ShoppingItemResponseDTO> toggleItem(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(service.toggleItemCompletion(deviceId, id));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Remover item da lista")
     @ApiResponse(responseCode = "404", description = "Item não encontrado",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
-        service.deleteItem(id);
+    public ResponseEntity<Void> deleteItem(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @PathVariable Long id) {
+        service.deleteItem(deviceId, id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/completed")
     @Operation(summary = "Remover todos os itens concluídos")
-    public ResponseEntity<Void> clearCompleted() {
-        service.clearCompletedItems();
+    public ResponseEntity<Void> clearCompleted(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        service.clearCompletedItems(deviceId);
         return ResponseEntity.noContent().build();
     }
 }
