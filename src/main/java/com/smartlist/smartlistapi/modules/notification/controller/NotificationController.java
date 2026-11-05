@@ -1,7 +1,10 @@
 package com.smartlist.smartlistapi.modules.notification.controller;
 
 import com.smartlist.smartlistapi.common.dto.ApiErrorResponse;
-import com.smartlist.smartlistapi.modules.notification.dto.*;
+import com.smartlist.smartlistapi.modules.notification.dto.NotificationTriggerRequestDTO;
+import com.smartlist.smartlistapi.modules.notification.dto.NotificationTriggerResponseDTO;
+import com.smartlist.smartlistapi.modules.notification.dto.SnoozeRequestDTO;
+import com.smartlist.smartlistapi.modules.notification.dto.SnoozeResponseDTO;
 import com.smartlist.smartlistapi.modules.notification.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,14 +28,17 @@ public class NotificationController {
     @Operation(summary = "Pausar lembretes")
     @ApiResponse(responseCode = "400", description = "Opção de pausa inválida",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<SnoozeResponseDTO> applySnooze(@Valid @RequestBody SnoozeRequestDTO dto) {
-        return ResponseEntity.ok(service.applySnooze(dto));
+    public ResponseEntity<SnoozeResponseDTO> applySnooze(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @Valid @RequestBody SnoozeRequestDTO dto) {
+        return ResponseEntity.ok(service.applySnooze(deviceId, dto));
     }
 
     @DeleteMapping("/snooze")
     @Operation(summary = "Reativar lembretes")
-    public ResponseEntity<SnoozeResponseDTO> cancelSnooze() {
-        return ResponseEntity.ok(service.cancelSnooze());
+    public ResponseEntity<SnoozeResponseDTO> cancelSnooze(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        return ResponseEntity.ok(service.cancelSnooze(deviceId));
     }
 
     @PostMapping("/trigger-check")
@@ -41,7 +47,9 @@ public class NotificationController {
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     @ApiResponse(responseCode = "404", description = "Residência ainda não configurada",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<NotificationTriggerResponseDTO> checkTrigger(@Valid @RequestBody NotificationTriggerRequestDTO dto) {
-        return ResponseEntity.ok(service.evaluateNotificationTrigger(dto));
+    public ResponseEntity<NotificationTriggerResponseDTO> checkTrigger(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @Valid @RequestBody NotificationTriggerRequestDTO dto) {
+        return ResponseEntity.ok(service.evaluateNotificationTrigger(deviceId, dto));
     }
 }

@@ -26,9 +26,9 @@ public class NotificationService {
     private final ShoppingItemService shoppingItemService;
 
     @Transactional
-    public SnoozeResponseDTO applySnooze(SnoozeRequestDTO dto) {
-        SnoozeEntity snooze = snoozeRepository.findFirstByOrderByIdAsc()
-                .orElseGet(SnoozeEntity::new);
+    public SnoozeResponseDTO applySnooze(String deviceId, SnoozeRequestDTO dto) {
+        SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId)
+                .orElseGet(() -> SnoozeEntity.builder().deviceId(deviceId).build());
 
         snooze.setActive(true);
         snooze.setOption(dto.option());
@@ -44,9 +44,9 @@ public class NotificationService {
     }
 
     @Transactional
-    public SnoozeResponseDTO cancelSnooze() {
-        SnoozeEntity snooze = snoozeRepository.findFirstByOrderByIdAsc()
-                .orElseGet(SnoozeEntity::new);
+    public SnoozeResponseDTO cancelSnooze(String deviceId) {
+        SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId)
+                .orElseGet(() -> SnoozeEntity.builder().deviceId(deviceId).build());
 
         snooze.setActive(false);
         snooze.setOption(null);
@@ -58,9 +58,9 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public NotificationTriggerResponseDTO evaluateNotificationTrigger(NotificationTriggerRequestDTO dto) {
-        // 1. Checa itens pendentes na lista
-        ShoppingListGroupedDTO groupedItems = shoppingItemService.getGroupedItems();
+    public NotificationTriggerResponseDTO evaluateNotificationTrigger(String deviceId, NotificationTriggerRequestDTO dto) {
+        // 1. Checa itens pendentes na lista EXCLUSIVAS deste celular
+        ShoppingListGroupedDTO groupedItems = shoppingItemService.getGroupedItems(deviceId);
         if (groupedItems.pendingCount() == 0) {
             return new NotificationTriggerResponseDTO(
                     false,
@@ -70,8 +70,8 @@ public class NotificationService {
             );
         }
 
-        // 2. Checa estado de Soneca
-        SnoozeEntity snooze = snoozeRepository.findFirstByOrderByIdAsc().orElse(null);
+        // 2. Checa estado de Soneca EXCLUSIVO deste celular
+        SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId).orElse(null);
         if (snooze != null && snooze.isActive()) {
             if (snooze.getOption() == SnoozeOptionEnum.INDEFINITE) {
                 return new NotificationTriggerResponseDTO(
@@ -92,8 +92,9 @@ public class NotificationService {
             }
         }
 
-        // 3. Checa Geofence (posição atual vs residência)
+        // 3. Checa Geofence (posição atual vs residência cadastrada para este celular)
         GeofenceCheckResponseDTO geofence = residenceService.checkGeofenceStatus(
+                deviceId,
                 new GeofenceCheckRequestDTO(dto.currentLatitude(), dto.currentLongitude())
         );
 
