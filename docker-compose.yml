@@ -1,12 +1,61 @@
+version: '3.8'
+
 services:
+  # Container do Banco de Dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: smart-list-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: smart_list_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - smart-list-net
+
+  # Container da API Spring Boot 3
   api:
     build: .
     container_name: smart-list-api
+    restart: always
+    depends_on:
+      - postgres
     ports:
       - "8080:8080"
-    volumes:
-      # MAPEAMENTO DE PASTA: Isola o arquivo de banco dentro de um diretório
-      - ./sqlite_data:/app/data
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smart_list_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+    networks:
+      - smart-list-net
+
+  # Interface visual Web para o PostgreSQL
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: smart-list-pgadmin
     restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - smart-list-net
+
+# Volume nomeado para persistência permanente dos dados do Postgres na máquina host
+volumes:
+  postgres_data:
+    driver: local
+
+# Rede interna para comunicação segura entre a API e o PostgreSQL
+networks:
+  smart-list-net:
+    driver: bridge
