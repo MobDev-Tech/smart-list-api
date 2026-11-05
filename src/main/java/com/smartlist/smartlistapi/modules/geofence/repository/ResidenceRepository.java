@@ -6,6 +6,5 @@ import java.util.Optional;
 
 public interface ResidenceRepository extends JpaRepository<ResidenceEntity, Long> {
     
-    // Como a aplicação é mono-usuário/local, pegamos a primeira residência cadastrada
-    Optional<ResidenceEntity> findFirstByOrderByIdAsc();
+    Optional<ResidenceEntity> findByDeviceId(String deviceId);
 }

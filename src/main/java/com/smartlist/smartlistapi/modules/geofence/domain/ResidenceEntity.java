@@ -21,6 +21,9 @@ public class ResidenceEntity {
     @JdbcTypeCode(SqlTypes.INTEGER)
     private Long id;
 
+    @Column(name = "device_id", nullable = false, unique = true)
+    private String deviceId;
+
     @Column(nullable = false)
     private String address;
 
