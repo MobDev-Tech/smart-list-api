@@ -21,16 +21,16 @@ public class UserSettingsService {
     private final ResidenceService residenceService;
 
     @Transactional(readOnly = true)
-    public UserSettingsResponseDTO getSettings() {
-        UserSettingsEntity entity = repository.findFirstByOrderByIdAsc()
-                .orElseGet(this::createDefaultSettings);
+    public UserSettingsResponseDTO getSettings(String deviceId) {
+        UserSettingsEntity entity = repository.findByDeviceId(deviceId)
+                .orElseGet(() -> createDefaultSettings(deviceId));
         return UserSettingsResponseDTO.fromEntity(entity);
     }
 
     @Transactional
-    public UserSettingsResponseDTO updateSettings(UserSettingsRequestDTO dto) {
-        UserSettingsEntity entity = repository.findFirstByOrderByIdAsc()
-                .orElseGet(this::createDefaultSettings);
+    public UserSettingsResponseDTO updateSettings(String deviceId, UserSettingsRequestDTO dto) {
+        UserSettingsEntity entity = repository.findByDeviceId(deviceId)
+                .orElseGet(() -> createDefaultSettings(deviceId));
 
         entity.setRemindOnLeave(dto.remindOnLeave());
         entity.setVibrateOnNotify(dto.vibrateOnNotify());
@@ -41,15 +41,15 @@ public class UserSettingsService {
     }
 
     @Transactional(readOnly = true)
-    public SystemDiagnosticResponseDTO getDiagnostic() {
-        UserSettingsEntity settings = repository.findFirstByOrderByIdAsc()
-                .orElseGet(this::createDefaultSettings);
+    public SystemDiagnosticResponseDTO getDiagnostic(String deviceId) {
+        UserSettingsEntity settings = repository.findByDeviceId(deviceId)
+                .orElseGet(() -> createDefaultSettings(deviceId));
 
         boolean residenceConfigured = false;
         String statusMessage = "Residência não configurada";
 
         try {
-            ResidenceResponseDTO residence = residenceService.getResidence();
+            ResidenceResponseDTO residence = residenceService.getResidence(deviceId);
             if (residence != null) {
                 residenceConfigured = true;
                 statusMessage = residence.geofenceActive() 
@@ -57,7 +57,7 @@ public class UserSettingsService {
                         : "Monitoramento Desativado";
             }
         } catch (Exception ignored) {
-            // Se a residência ainda não foi cadastrada, mantemos a mensagem padrão
+            // Se a residência ainda não foi cadastrada para este dispositivo, mantemos a mensagem padrão
         }
 
         boolean isReady = settings.getNotificationPermission() == NotificationPermissionEnum.PERMITIDO
@@ -73,8 +73,9 @@ public class UserSettingsService {
         );
     }
 
-    private UserSettingsEntity createDefaultSettings() {
+    private UserSettingsEntity createDefaultSettings(String deviceId) {
         UserSettingsEntity defaultSettings = UserSettingsEntity.builder()
+                .deviceId(deviceId)
                 .remindOnLeave(true)
                 .vibrateOnNotify(true)
                 .notificationPermission(NotificationPermissionEnum.PERMITIDO)
