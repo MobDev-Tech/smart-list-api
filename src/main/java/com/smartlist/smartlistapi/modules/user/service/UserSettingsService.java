@@ -20,7 +20,7 @@ public class UserSettingsService {
     private final UserSettingsRepository repository;
     private final ResidenceService residenceService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public UserSettingsResponseDTO getSettings(String deviceId) {
         UserSettingsEntity entity = repository.findByDeviceId(deviceId)
                 .orElseGet(() -> createDefaultSettings(deviceId));
@@ -40,7 +40,7 @@ public class UserSettingsService {
         return UserSettingsResponseDTO.fromEntity(repository.save(entity));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public SystemDiagnosticResponseDTO getDiagnostic(String deviceId) {
         UserSettingsEntity settings = repository.findByDeviceId(deviceId)
                 .orElseGet(() -> createDefaultSettings(deviceId));
