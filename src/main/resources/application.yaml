@@ -4,9 +4,9 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/smart_list_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgrespassword}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/smart_list_db}
+    username: ${DB_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${DB_PASSWORD:${POSTGRES_PASSWORD:postgrespassword}}
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
