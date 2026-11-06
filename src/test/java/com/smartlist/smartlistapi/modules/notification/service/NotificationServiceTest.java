@@ -1,5 +1,6 @@
 package com.smartlist.smartlistapi.modules.notification.service;
 
+import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckRequestDTO;
 import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckResponseDTO;
 import com.smartlist.smartlistapi.modules.geofence.service.ResidenceService;
 import com.smartlist.smartlistapi.modules.notification.domain.SnoozeEntity;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +39,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do serviço de notificações")
 class NotificationServiceTest {
+
+    private static final String DEVICE_ID = "device-1";
 
     @Mock
     private SnoozeRepository snoozeRepository;
@@ -53,11 +57,11 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Deve definir prazo de trinta minutos para a soneca")
     void dadaOpcaoDeTrintaMinutos_quandoSonecaAplicada_entaoDefinirPrazoDeTrintaMinutos() {
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
         when(snoozeRepository.save(any(SnoozeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         LocalDateTime before = LocalDateTime.now();
 
-        SnoozeResponseDTO result = service.applySnooze(new SnoozeRequestDTO(SnoozeOptionEnum.MINUTES_30));
+        SnoozeResponseDTO result = service.applySnooze(DEVICE_ID, new SnoozeRequestDTO(SnoozeOptionEnum.MINUTES_30));
 
         LocalDateTime after = LocalDateTime.now();
         assertTrue(result.active());
@@ -72,10 +76,10 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Deve aplicar soneca indefinida sem definir prazo")
     void dadaOpcaoIndefinida_quandoSonecaAplicada_entaoNaoDefinirPrazo() {
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
         when(snoozeRepository.save(any(SnoozeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        SnoozeResponseDTO result = service.applySnooze(new SnoozeRequestDTO(SnoozeOptionEnum.INDEFINITE));
+        SnoozeResponseDTO result = service.applySnooze(DEVICE_ID, new SnoozeRequestDTO(SnoozeOptionEnum.INDEFINITE));
 
         assertTrue(result.active());
         assertEquals(SnoozeOptionEnum.INDEFINITE, result.option());
@@ -87,15 +91,15 @@ class NotificationServiceTest {
     @DisplayName("Deve cancelar a soneca e reativar o monitoramento")
     void dadaSonecaAtiva_quandoCancelada_entaoReativarMonitoramento() {
         SnoozeEntity snooze = SnoozeEntity.builder()
-                .id(1L)
+                .deviceId(DEVICE_ID)
                 .active(true)
                 .option(SnoozeOptionEnum.INDEFINITE)
                 .snoozedUntil(LocalDateTime.now().plusDays(1))
                 .build();
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(snooze));
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(snooze));
         when(snoozeRepository.save(snooze)).thenReturn(snooze);
 
-        SnoozeResponseDTO result = service.cancelSnooze();
+        SnoozeResponseDTO result = service.cancelSnooze(DEVICE_ID);
 
         assertFalse(result.active());
         assertNull(result.option());
@@ -107,61 +111,62 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Não deve notificar quando não há itens pendentes")
     void dadaListaSemItensPendentes_quandoGatilhoAvaliado_entaoNaoNotificar() {
-        when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(0));
+        when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(0));
 
-        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(request());
+        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(DEVICE_ID, request());
 
         assertFalse(result.shouldNotify());
         assertEquals(0, result.pendingItemsCount());
         assertEquals("Nenhum item pendente na lista de compras.", result.reason());
-        verify(snoozeRepository, never()).findFirstByOrderByIdAsc();
-        verify(residenceService, never()).checkGeofenceStatus(any());
+        verify(snoozeRepository, never()).findByDeviceId(DEVICE_ID);
+        verify(residenceService, never()).checkGeofenceStatus(any(), any());
     }
 
     @Test
     @DisplayName("Não deve notificar durante uma soneca indefinida")
     void dadaSonecaIndefinidaAtiva_quandoGatilhoAvaliado_entaoNaoNotificar() {
-        when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(2));
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
-                SnoozeEntity.builder().active(true).option(SnoozeOptionEnum.INDEFINITE).build()));
+        when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(
+                SnoozeEntity.builder().deviceId(DEVICE_ID).active(true).option(SnoozeOptionEnum.INDEFINITE).build()));
 
-        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(request());
+        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(DEVICE_ID, request());
 
         assertFalse(result.shouldNotify());
         assertEquals(2, result.pendingItemsCount());
         assertTrue(result.reason().contains("pausadas manualmente"));
-        verify(residenceService, never()).checkGeofenceStatus(any());
+        verify(residenceService, never()).checkGeofenceStatus(any(), any());
     }
 
     @Test
     @DisplayName("Não deve notificar durante uma soneca temporária")
     void dadaSonecaTemporariaAtiva_quandoGatilhoAvaliado_entaoNaoNotificar() {
         LocalDateTime deadline = LocalDateTime.now().plusMinutes(10);
-        when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(2));
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
+        when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(
                 SnoozeEntity.builder()
+                        .deviceId(DEVICE_ID)
                         .active(true)
                         .option(SnoozeOptionEnum.HOUR_1)
                         .snoozedUntil(deadline)
                         .build()));
 
-        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(request());
+        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(DEVICE_ID, request());
 
         assertFalse(result.shouldNotify());
         assertEquals(2, result.pendingItemsCount());
         assertTrue(result.reason().contains(deadline.toString()));
-        verify(residenceService, never()).checkGeofenceStatus(any());
+        verify(residenceService, never()).checkGeofenceStatus(any(), any());
     }
 
     @Test
     @DisplayName("Não deve notificar quando o dispositivo está no perímetro")
     void dadoDispositivoDentroDoPerimetro_quandoGatilhoAvaliado_entaoNaoNotificar() {
-        when(shoppingItemService.getGroupedItems()).thenReturn(groupedItems(2));
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
-        when(residenceService.checkGeofenceStatus(any())).thenReturn(
-                new GeofenceCheckResponseDTO(true, 50, 150, "Dentro"));
+        when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
+        when(residenceService.checkGeofenceStatus(eq(DEVICE_ID), any(GeofenceCheckRequestDTO.class))).thenReturn(
+                new GeofenceCheckResponseDTO(true, 50, 150, "Dispositivo dentro do perímetro residencial (150m)"));
 
-        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(request());
+        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(DEVICE_ID, request());
 
         assertFalse(result.shouldNotify());
         assertEquals(2, result.pendingItemsCount());
@@ -174,12 +179,12 @@ class NotificationServiceTest {
         ShoppingItemResponseDTO pendingItem = new ShoppingItemResponseDTO(
                 1L, "Leite", "1 L", null, false, null);
         ShoppingListGroupedDTO items = new ShoppingListGroupedDTO(1, List.of(pendingItem), 0, List.of());
-        when(shoppingItemService.getGroupedItems()).thenReturn(items);
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
-        when(residenceService.checkGeofenceStatus(any())).thenReturn(
-                new GeofenceCheckResponseDTO(false, 500, 150, "Fora"));
+        when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(items);
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
+        when(residenceService.checkGeofenceStatus(eq(DEVICE_ID), any(GeofenceCheckRequestDTO.class))).thenReturn(
+                new GeofenceCheckResponseDTO(false, 500, 150, "Afastamento de 500m da residência detectado (limite: 150m)"));
 
-        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(request());
+        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(DEVICE_ID, request());
 
         assertTrue(result.shouldNotify());
         assertEquals("Afastamento detectado com itens pendentes na lista!", result.reason());
@@ -190,11 +195,11 @@ class NotificationServiceTest {
     @Test
     @DisplayName("Deve definir a soneca para amanhã às oito da manhã")
     void dadaOpcaoAmanhaDeManha_quandoSonecaAplicada_entaoDefinirPrazoAsOitoHoras() {
-        when(snoozeRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
         when(snoozeRepository.save(any(SnoozeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         SnoozeResponseDTO result = service.applySnooze(
-                new SnoozeRequestDTO(SnoozeOptionEnum.TOMORROW_MORNING));
+                DEVICE_ID, new SnoozeRequestDTO(SnoozeOptionEnum.TOMORROW_MORNING));
 
         assertEquals(LocalDate.now().plusDays(1).atTime(8, 0), result.snoozedUntil());
     }

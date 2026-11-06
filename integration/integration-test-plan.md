@@ -2,9 +2,9 @@
 
 ## Escopo e estratégia
 
-Os testes Layer 1 percorrem a aplicação Spring MVC completa, dos endpoints HTTP aos serviços, repositórios JPA e banco SQLite real em arquivo. O perfil `integration` usa `target/integration-tests.db`, separado do banco local da aplicação. Os dados das tabelas são limpos antes de cada teste.
+Os testes Layer 1 percorrem a aplicação Spring MVC completa, dos endpoints HTTP aos serviços, repositórios JPA e banco PostgreSQL em execução local. O perfil `integration` usa um banco dedicado (`smart_list_test` em `localhost:5432`), separado do banco da aplicação. Os dados das tabelas são limpos antes de cada teste.
 
-SQLite é embutido neste projeto; não há dependência de banco remoto ou serviço que exija Testcontainers. Os testes não substituem controladores, serviços ou repositórios por mocks e não exigem Docker.
+O projeto usa PostgreSQL como banco oficial; os testes de integração exigem que o serviço do banco esteja disponível localmente (por exemplo, via Docker Compose). Os testes não substituem controladores, serviços ou repositórios por mocks e validam a persistência real do fluxo HTTP.
 
 ## Cobertura existente e lacunas
 
@@ -24,10 +24,11 @@ Antes desta alteração, havia testes unitários de serviços e um teste de cont
 ## Configuração e execução
 
 - Java 21 e Maven Wrapper do projeto.
-- JUnit 5, Spring Boot Test/MockMvc e SQLite JDBC já declarados no projeto.
+- JUnit 5, Spring Boot Test/MockMvc e PostgreSQL JDBC já declarados no projeto.
 - Perfil de teste: `src/test/resources/application-integration.yaml`.
 - Classes terminam em `L1Test` e usam `@Tag("Layer1")`.
-- Não são necessários novos módulos, dependências ou containers.
+- Crie o banco `smart_list_test` no PostgreSQL e disponibilize-o localmente. Credenciais/URL podem ser sobrescritas com `TEST_DB_URL`, `TEST_DB_USERNAME` e `TEST_DB_PASSWORD`.
+- Não aponte o perfil de teste para o banco de desenvolvimento: ele usa `ddl-auto: create-drop`.
 - Execução: `powershell -ExecutionPolicy Bypass -File integration\run-layer1-tests.ps1` no Windows ou `bash integration/run-layer1-tests.sh` em sistemas Unix-like.
 
 ## Critérios de validação

@@ -30,6 +30,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes do serviço de itens da lista de compras")
 class ShoppingItemServiceTest {
 
+    private static final String DEVICE_ID = "device-1";
+
     @Mock
     private ShoppingItemRepository repository;
 
@@ -41,10 +43,10 @@ class ShoppingItemServiceTest {
     void dadaListaComItensPendentesEConcluidos_quandoAgrupada_entaoRetornarCadaGrupo() {
         ShoppingItemEntity pending = item(1L, "Leite", false);
         ShoppingItemEntity completed = item(2L, "Pão", true);
-        when(repository.findByCompletedFalseOrderByCreatedAtDesc()).thenReturn(List.of(pending));
-        when(repository.findByCompletedTrueOrderByUpdatedAtDesc()).thenReturn(List.of(completed));
+        when(repository.findByDeviceIdAndCompletedFalseOrderByCreatedAtDesc(DEVICE_ID)).thenReturn(List.of(pending));
+        when(repository.findByDeviceIdAndCompletedTrueOrderByUpdatedAtDesc(DEVICE_ID)).thenReturn(List.of(completed));
 
-        ShoppingListGroupedDTO result = service.getGroupedItems();
+        ShoppingListGroupedDTO result = service.getGroupedItems(DEVICE_ID);
 
         assertEquals(1, result.pendingCount());
         assertEquals("Leite", result.pendingItems().getFirst().name());
@@ -63,7 +65,7 @@ class ShoppingItemServiceTest {
         ShoppingItemRequestDTO request = new ShoppingItemRequestDTO(
                 "Arroz", "2 kg", ItemCategoryEnum.MERCEARIA);
 
-        ShoppingItemResponseDTO result = service.createItem(request);
+        ShoppingItemResponseDTO result = service.createItem(DEVICE_ID, request);
 
         assertEquals(5L, result.id());
         assertEquals("Arroz", result.name());
@@ -76,11 +78,11 @@ class ShoppingItemServiceTest {
     @DisplayName("Deve atualizar um item existente")
     void dadoItemExistente_quandoAtualizado_entaoPersistirAsAlteracoes() {
         ShoppingItemEntity item = item(3L, "Leite", false);
-        when(repository.findById(3L)).thenReturn(Optional.of(item));
+        when(repository.findByIdAndDeviceId(3L, DEVICE_ID)).thenReturn(Optional.of(item));
         when(repository.save(item)).thenReturn(item);
 
         ShoppingItemResponseDTO result = service.updateItem(
-                3L, new ShoppingItemRequestDTO("Leite integral", "1 L", ItemCategoryEnum.LATICINIOS));
+                DEVICE_ID, 3L, new ShoppingItemRequestDTO("Leite integral", "1 L", ItemCategoryEnum.LATICINIOS));
 
         assertEquals("Leite integral", result.name());
         assertEquals("1 L", result.quantity());
@@ -91,10 +93,10 @@ class ShoppingItemServiceTest {
     @Test
     @DisplayName("Deve lançar exceção ao atualizar item inexistente")
     void dadoItemInexistente_quandoAtualizado_entaoLancarExcecao() {
-        when(repository.findById(42L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndDeviceId(42L, DEVICE_ID)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> service.updateItem(
-                42L, new ShoppingItemRequestDTO("Leite", "1 L", ItemCategoryEnum.LATICINIOS)));
+                DEVICE_ID, 42L, new ShoppingItemRequestDTO("Leite", "1 L", ItemCategoryEnum.LATICINIOS)));
         verify(repository, never()).save(any(ShoppingItemEntity.class));
     }
 
@@ -102,10 +104,10 @@ class ShoppingItemServiceTest {
     @DisplayName("Deve alternar o estado de conclusão do item")
     void dadoItemPendente_quandoConclusaoAlternada_entaoMarcarComoConcluido() {
         ShoppingItemEntity item = item(3L, "Leite", false);
-        when(repository.findById(3L)).thenReturn(Optional.of(item));
+        when(repository.findByIdAndDeviceId(3L, DEVICE_ID)).thenReturn(Optional.of(item));
         when(repository.save(item)).thenReturn(item);
 
-        ShoppingItemResponseDTO result = service.toggleItemCompletion(3L);
+        ShoppingItemResponseDTO result = service.toggleItemCompletion(DEVICE_ID, 3L);
 
         assertTrue(result.completed());
         verify(repository).save(item);
@@ -115,9 +117,9 @@ class ShoppingItemServiceTest {
     @DisplayName("Deve excluir o item encontrado")
     void dadoItemExistente_quandoExcluido_entaoRemoverDoRepositorio() {
         ShoppingItemEntity item = item(3L, "Leite", false);
-        when(repository.findById(3L)).thenReturn(Optional.of(item));
+        when(repository.findByIdAndDeviceId(3L, DEVICE_ID)).thenReturn(Optional.of(item));
 
-        service.deleteItem(3L);
+        service.deleteItem(DEVICE_ID, 3L);
 
         verify(repository).delete(item);
     }
@@ -125,23 +127,24 @@ class ShoppingItemServiceTest {
     @Test
     @DisplayName("Deve lançar exceção ao excluir item inexistente")
     void dadoItemInexistente_quandoExcluido_entaoLancarExcecao() {
-        when(repository.findById(42L)).thenReturn(Optional.empty());
+        when(repository.findByIdAndDeviceId(42L, DEVICE_ID)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.deleteItem(42L));
+        assertThrows(ResourceNotFoundException.class, () -> service.deleteItem(DEVICE_ID, 42L));
         verify(repository, never()).delete(any(ShoppingItemEntity.class));
     }
 
     @Test
     @DisplayName("Deve remover todos os itens concluídos")
     void dadosItensConcluidos_quandoLimpezaExecutada_entaoRemoverTodos() {
-        service.clearCompletedItems();
+        service.clearCompletedItems(DEVICE_ID);
 
-        verify(repository).deleteByCompletedTrue();
+        verify(repository).deleteByDeviceIdAndCompletedTrue(DEVICE_ID);
     }
 
     private ShoppingItemEntity item(Long id, String name, boolean completed) {
         return ShoppingItemEntity.builder()
                 .id(id)
+                .deviceId(DEVICE_ID)
                 .name(name)
                 .quantity("1")
                 .category(ItemCategoryEnum.MERCADO)

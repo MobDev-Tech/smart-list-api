@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes do serviço de residência")
 class ResidenceServiceTest {
 
+    private static final String DEVICE_ID = "device-1";
+
     @Mock
     private ResidenceRepository repository;
 
@@ -38,9 +40,9 @@ class ResidenceServiceTest {
     @DisplayName("Deve retornar a residência configurada")
     void dadaResidenciaConfigurada_quandoConsultada_entaoRetornarSeusDados() {
         ResidenceEntity residence = residence();
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence));
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(residence));
 
-        ResidenceResponseDTO result = service.getResidence();
+        ResidenceResponseDTO result = service.getResidence(DEVICE_ID);
 
         assertEquals(1L, result.id());
         assertEquals("Rua das Flores", result.address());
@@ -51,23 +53,28 @@ class ResidenceServiceTest {
     @Test
     @DisplayName("Deve lançar exceção quando não há residência configurada")
     void dadaResidenciaNaoConfigurada_quandoConsultada_entaoLancarExcecao() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.getResidence());
+        assertThrows(ResourceNotFoundException.class, () -> service.getResidence(DEVICE_ID));
     }
 
     @Test
     @DisplayName("Deve salvar residência nova e ativar geofence por padrão")
     void dadaNovaResidencia_quandoSalvaSemEstadoExplicito_entaoAtivarGeofencePorPadrao() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
-        when(repository.save(any(ResidenceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
+        when(repository.save(any(ResidenceEntity.class))).thenAnswer(invocation -> {
+            ResidenceEntity saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
         ResidenceRequestDTO request = new ResidenceRequestDTO(
-                "Rua das Flores", "Casa 2", -23.5, -46.6, 200, null);
+                "Rua das Flores", "Casa 2", -23.5, -46.6, null);
 
-        ResidenceResponseDTO result = service.saveOrUpdateResidence(request);
+        ResidenceResponseDTO result = service.saveOrUpdateResidence(DEVICE_ID, request);
 
         assertEquals("Rua das Flores", result.address());
         assertEquals("Casa 2", result.complement());
+        assertEquals(150, result.radiusMeters());
         assertTrue(result.geofenceActive());
         verify(repository).save(any(ResidenceEntity.class));
     }
@@ -76,16 +83,16 @@ class ResidenceServiceTest {
     @DisplayName("Deve atualizar residência existente e manter geofence desativado")
     void dadaResidenciaExistente_quandoAtualizadaComGeofenceDesativado_entaoPreservarEstadoDesativado() {
         ResidenceEntity residence = residence();
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence));
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(residence));
         when(repository.save(residence)).thenReturn(residence);
         ResidenceRequestDTO request = new ResidenceRequestDTO(
-                "Avenida Central", null, -22.9, -43.2, 300, false);
+                "Avenida Central", null, -22.9, -43.2, false);
 
-        ResidenceResponseDTO result = service.saveOrUpdateResidence(request);
+        ResidenceResponseDTO result = service.saveOrUpdateResidence(DEVICE_ID, request);
 
         assertEquals("Avenida Central", result.address());
         assertEquals(-22.9, result.latitude());
-        assertEquals(300, result.radiusMeters());
+        assertEquals(150, result.radiusMeters());
         assertFalse(result.geofenceActive());
         verify(repository).save(residence);
     }
@@ -93,43 +100,44 @@ class ResidenceServiceTest {
     @Test
     @DisplayName("Deve indicar que o dispositivo está dentro do perímetro")
     void dadaResidenciaConfigurada_quandoCoordenadasCorrespondem_entaoIndicarDentroDoPerimetro() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence()));
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(residence()));
 
         GeofenceCheckResponseDTO result = service.checkGeofenceStatus(
-                new GeofenceCheckRequestDTO(-23.5, -46.6));
+                DEVICE_ID, new GeofenceCheckRequestDTO(-23.5, -46.6));
 
         assertTrue(result.insidePerimeter());
         assertEquals(0.0, result.distanceFromHomeMeters());
         assertEquals(150, result.allowedRadiusMeters());
-        assertEquals("Dispositivo dentro do perímetro residencial", result.statusMessage());
+        assertEquals("Dispositivo dentro do perímetro residencial (150m)", result.statusMessage());
     }
 
     @Test
     @DisplayName("Deve calcular a distância e indicar que o dispositivo está fora do perímetro")
     void dadaResidenciaConfigurada_quandoCoordenadasEstaoDistantes_entaoCalcularDistanciaEIndicarFora() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(residence()));
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(residence()));
 
         GeofenceCheckResponseDTO result = service.checkGeofenceStatus(
-                new GeofenceCheckRequestDTO(-23.5, -46.61));
+                DEVICE_ID, new GeofenceCheckRequestDTO(-23.5, -46.61));
 
         assertFalse(result.insidePerimeter());
         assertEquals(1019.72, result.distanceFromHomeMeters(), 0.1);
         assertEquals(150, result.allowedRadiusMeters());
-        assertEquals("Afastamento de 1020m da residência detectado", result.statusMessage());
+        assertEquals("Afastamento de 1020m da residência detectado (limite: 150m)", result.statusMessage());
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao verificar geofence sem residência configurada")
     void dadaResidenciaNaoConfigurada_quandoGeofenceVerificado_entaoLancarExcecao() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () ->
-                service.checkGeofenceStatus(new GeofenceCheckRequestDTO(-23.5, -46.6)));
+                service.checkGeofenceStatus(DEVICE_ID, new GeofenceCheckRequestDTO(-23.5, -46.6)));
     }
 
     private ResidenceEntity residence() {
         return ResidenceEntity.builder()
                 .id(1L)
+                .deviceId(DEVICE_ID)
                 .address("Rua das Flores")
                 .complement("Casa 2")
                 .latitude(-23.5)

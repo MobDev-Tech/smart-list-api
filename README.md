@@ -13,7 +13,7 @@ A API dará suporte ao aplicativo mobile e à organização das listas e dos ite
 - ☕ Java 21
 - 🌱 Spring Boot 4.1.1
 - 🌐 Spring Web MVC
-- 💾 Spring Data JPA e SQLite JDBC
+- 💾 Spring Data JPA e PostgreSQL
 - ✅ Bean Validation
 - 📦 Maven (com Maven Wrapper)
 
