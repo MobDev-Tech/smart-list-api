@@ -49,6 +49,13 @@
 			<version>3.2.0</version>
 		</dependency>
 
+		<!-- Ler o .env -->
+		<dependency>
+			<groupId>io.github.cdimascio</groupId>
+			<artifactId>dotenv-java</artifactId>
+			<version>3.0.0</version>
+		</dependency>
+
 		<!-- Driver oficial do PostgreSQL -->
 		<dependency>
 				<groupId>org.postgresql</groupId>
