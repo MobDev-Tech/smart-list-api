@@ -25,21 +25,25 @@ public class UserSettingsController {
 
     @GetMapping
     @Operation(summary = "Consultar configurações")
-    public ResponseEntity<UserSettingsResponseDTO> getSettings() {
-        return ResponseEntity.ok(service.getSettings());
+    public ResponseEntity<UserSettingsResponseDTO> getSettings(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        return ResponseEntity.ok(service.getSettings(deviceId));
     }
 
     @PutMapping
     @Operation(summary = "Atualizar configurações")
     @ApiResponse(responseCode = "400", description = "Dados das configurações inválidos",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<UserSettingsResponseDTO> updateSettings(@Valid @RequestBody UserSettingsRequestDTO dto) {
-        return ResponseEntity.ok(service.updateSettings(dto));
+    public ResponseEntity<UserSettingsResponseDTO> updateSettings(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @Valid @RequestBody UserSettingsRequestDTO dto) {
+        return ResponseEntity.ok(service.updateSettings(deviceId, dto));
     }
 
     @GetMapping("/diagnostic")
     @Operation(summary = "Consultar diagnóstico do sistema")
-    public ResponseEntity<SystemDiagnosticResponseDTO> getDiagnostic() {
-        return ResponseEntity.ok(service.getDiagnostic());
+    public ResponseEntity<SystemDiagnosticResponseDTO> getDiagnostic(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        return ResponseEntity.ok(service.getDiagnostic(deviceId));
     }
 }

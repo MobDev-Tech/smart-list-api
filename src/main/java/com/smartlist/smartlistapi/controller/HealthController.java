@@ -20,7 +20,7 @@ public class HealthController {
         return ResponseEntity.ok(Map.of(
             "status", "UP",
             "service", "Smart List API",
-            "database", "SQLite"
+            "database", "PostgreSQL"
         ));
     }
 }

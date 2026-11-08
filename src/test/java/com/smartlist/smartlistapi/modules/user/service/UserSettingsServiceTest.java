@@ -30,6 +30,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes do serviço de configurações do usuário")
 class UserSettingsServiceTest {
 
+    private static final String DEVICE_ID = "device-1";
+
     @Mock
     private UserSettingsRepository repository;
 
@@ -42,14 +44,14 @@ class UserSettingsServiceTest {
     @Test
     @DisplayName("Deve criar configurações padrão quando não existem")
     void dadasConfiguracoesInexistentes_quandoConsultadas_entaoCriarValoresPadrao() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.empty());
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
         when(repository.save(any(UserSettingsEntity.class))).thenAnswer(invocation -> {
             UserSettingsEntity saved = invocation.getArgument(0);
             saved.setId(1L);
             return saved;
         });
 
-        UserSettingsResponseDTO result = service.getSettings();
+        UserSettingsResponseDTO result = service.getSettings(DEVICE_ID);
 
         assertEquals(1L, result.id());
         assertTrue(result.remindOnLeave());
@@ -62,12 +64,12 @@ class UserSettingsServiceTest {
     @DisplayName("Deve atualizar e salvar as configurações existentes")
     void dadasConfiguracoesExistentes_quandoAtualizadas_entaoPersistirAlteracoes() {
         UserSettingsEntity settings = settings();
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings));
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(settings));
         when(repository.save(settings)).thenReturn(settings);
         UserSettingsRequestDTO request = new UserSettingsRequestDTO(
                 false, false, NotificationPermissionEnum.NEGADO, LocationPermissionEnum.NEGADO);
 
-        UserSettingsResponseDTO result = service.updateSettings(request);
+        UserSettingsResponseDTO result = service.updateSettings(DEVICE_ID, request);
 
         assertFalse(result.remindOnLeave());
         assertFalse(result.vibrateOnNotify());
@@ -79,11 +81,11 @@ class UserSettingsServiceTest {
     @Test
     @DisplayName("Deve indicar que o sistema está pronto com permissões e residência configuradas")
     void dadasPermissoesEResidenciaConfiguradas_quandoDiagnosticoConsultado_entaoIndicarSistemaPronto() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings()));
-        when(residenceService.getResidence()).thenReturn(
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(settings()));
+        when(residenceService.getResidence(DEVICE_ID)).thenReturn(
                 new ResidenceResponseDTO(1L, "Rua das Flores", null, -23.5, -46.6, 150, true));
 
-        SystemDiagnosticResponseDTO result = service.getDiagnostic();
+        SystemDiagnosticResponseDTO result = service.getDiagnostic(DEVICE_ID);
 
         assertTrue(result.isSystemReady());
         assertTrue(result.isResidenceConfigured());
@@ -93,11 +95,11 @@ class UserSettingsServiceTest {
     @Test
     @DisplayName("Deve indicar que o sistema não está pronto sem residência configurada")
     void dadaResidenciaNaoConfigurada_quandoDiagnosticoConsultado_entaoIndicarSistemaNaoPronto() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings()));
-        when(residenceService.getResidence()).thenThrow(
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(settings()));
+        when(residenceService.getResidence(DEVICE_ID)).thenThrow(
                 new ResourceNotFoundException("Residência ainda não configurada."));
 
-        SystemDiagnosticResponseDTO result = service.getDiagnostic();
+        SystemDiagnosticResponseDTO result = service.getDiagnostic(DEVICE_ID);
 
         assertFalse(result.isSystemReady());
         assertFalse(result.isResidenceConfigured());
@@ -107,11 +109,11 @@ class UserSettingsServiceTest {
     @Test
     @DisplayName("Deve informar quando o geofence está desativado")
     void dadaResidenciaComGeofenceDesativado_quandoDiagnosticoConsultado_entaoInformarMonitoramentoDesativado() {
-        when(repository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings()));
-        when(residenceService.getResidence()).thenReturn(
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(settings()));
+        when(residenceService.getResidence(DEVICE_ID)).thenReturn(
                 new ResidenceResponseDTO(1L, "Rua das Flores", null, -23.5, -46.6, 150, false));
 
-        SystemDiagnosticResponseDTO result = service.getDiagnostic();
+        SystemDiagnosticResponseDTO result = service.getDiagnostic(DEVICE_ID);
 
         assertTrue(result.isResidenceConfigured());
         assertTrue(result.isSystemReady());
@@ -121,6 +123,7 @@ class UserSettingsServiceTest {
     private UserSettingsEntity settings() {
         return UserSettingsEntity.builder()
                 .id(1L)
+                .deviceId(DEVICE_ID)
                 .remindOnLeave(true)
                 .vibrateOnNotify(true)
                 .notificationPermission(NotificationPermissionEnum.PERMITIDO)

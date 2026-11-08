@@ -28,16 +28,19 @@ public class ResidenceController {
     @Operation(summary = "Consultar residência configurada")
     @ApiResponse(responseCode = "404", description = "Residência ainda não configurada",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<ResidenceResponseDTO> getResidence() {
-        return ResponseEntity.ok(service.getResidence());
+    public ResponseEntity<ResidenceResponseDTO> getResidence(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        return ResponseEntity.ok(service.getResidence(deviceId));
     }
 
     @PostMapping
     @Operation(summary = "Criar ou atualizar residência")
     @ApiResponse(responseCode = "400", description = "Dados inválidos",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<ResidenceResponseDTO> saveOrUpdateResidence(@Valid @RequestBody ResidenceRequestDTO dto) {
-        return ResponseEntity.ok(service.saveOrUpdateResidence(dto));
+    public ResponseEntity<ResidenceResponseDTO> saveOrUpdateResidence(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @Valid @RequestBody ResidenceRequestDTO dto) {
+        return ResponseEntity.ok(service.saveOrUpdateResidence(deviceId, dto));
     }
 
     @PostMapping("/check-geofence")
@@ -46,7 +49,9 @@ public class ResidenceController {
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     @ApiResponse(responseCode = "404", description = "Residência ainda não configurada",
         content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-    public ResponseEntity<GeofenceCheckResponseDTO> checkGeofence(@Valid @RequestBody GeofenceCheckRequestDTO dto) {
-        return ResponseEntity.ok(service.checkGeofenceStatus(dto));
+    public ResponseEntity<GeofenceCheckResponseDTO> checkGeofence(
+            @RequestHeader("X-Device-ID") String deviceId,
+            @Valid @RequestBody GeofenceCheckRequestDTO dto) {
+        return ResponseEntity.ok(service.checkGeofenceStatus(deviceId, dto));
     }
 }

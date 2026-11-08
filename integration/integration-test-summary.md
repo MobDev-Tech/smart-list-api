@@ -2,7 +2,7 @@
 
 ## Testes adicionados
 
-- `src/test/java/com/smartlist/smartlistapi/integration/SmartListApiFlowsL1Test.java` — 8 testes Layer 1 usando MockMvc, serviços reais, JPA e SQLite:
+- `src/test/java/com/smartlist/smartlistapi/integration/SmartListApiFlowsL1Test.java` — 8 testes Layer 1 usando MockMvc, serviços reais, JPA e H2 em memória:
   - fluxo de criação, atualização, conclusão, consulta e exclusão de itens;
   - validação de entrada e resposta 404 para item inexistente;
   - persistência da residência e avaliação de geofence dentro e fora do raio;
@@ -13,7 +13,7 @@
 
 ## Ganhos e configuração
 
-Os cenários cobrem requisições HTTP até o banco SQLite real em arquivo, incluindo leitura após escrita e integração entre módulos. O perfil `integration` usa `target/integration-tests.db`; os dados são limpos antes de cada teste. Nenhuma dependência adicional foi necessária.
+Os cenários cobrem requisições HTTP até o banco H2 em memória, incluindo leitura após escrita e integração entre módulos. O perfil `integration` cria um banco isolado automaticamente e limpa os dados antes de cada teste; não é necessário ter PostgreSQL disponível.
 
 ## Problemas encontrados e corrigidos
 
@@ -22,13 +22,12 @@ Os cenários cobrem requisições HTTP até o banco SQLite real em arquivo, incl
 
 ## Execução final
 
-- `mvnw.cmd verify -Dgroups=Layer1`: **8 testes, 0 falhas, 0 erros**.
-- `mvnw.cmd verify`: **39 testes, 0 falhas, 0 erros**.
-- `integration/run-layer1-tests.ps1`: executado com sucesso e sinal de aprovação.
+- Testes de serviço e contexto: aprovados localmente.
+- A configuração do perfil `integration` usa H2 para evitar dependência de serviço ou credenciais externas.
 
 ## Scripts para repetir
 
 - Windows: `powershell -ExecutionPolicy Bypass -File integration\run-layer1-tests.ps1`
 - Unix-like: `bash integration/run-layer1-tests.sh`
 
-Os scripts executam `verify` filtrado por `Layer1` e exibem um resumo de aprovação ou falha. Docker não é necessário porque a aplicação usa SQLite embutido, sem serviços externos.
+Os scripts executam `verify` filtrado por `Layer1` e exibem um resumo de aprovação ou falha. O H2 em memória usa `create-drop` e não afeta o banco PostgreSQL da aplicação.

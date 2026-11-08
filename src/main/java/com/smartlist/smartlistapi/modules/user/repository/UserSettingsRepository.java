@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface UserSettingsRepository extends JpaRepository<UserSettingsEntity, Long> {
 
-    Optional<UserSettingsEntity> findFirstByOrderByIdAsc();
+    Optional<UserSettingsEntity> findByDeviceId(String deviceId);
 }

@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface SnoozeRepository extends JpaRepository<SnoozeEntity, Long> {
 
-    Optional<SnoozeEntity> findFirstByOrderByIdAsc();
+    Optional<SnoozeEntity> findByDeviceId(String deviceId);
 }

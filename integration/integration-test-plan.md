@@ -2,9 +2,9 @@
 
 ## Escopo e estratégia
 
-Os testes Layer 1 percorrem a aplicação Spring MVC completa, dos endpoints HTTP aos serviços, repositórios JPA e banco SQLite real em arquivo. O perfil `integration` usa `target/integration-tests.db`, separado do banco local da aplicação. Os dados das tabelas são limpos antes de cada teste.
+Os testes Layer 1 percorrem a aplicação Spring MVC completa, dos endpoints HTTP aos serviços, repositórios JPA e banco H2 em memória. O perfil `integration` cria um banco isolado (`smart_list_test`) para os testes, sem depender de um serviço externo. As tabelas são recriadas no início e os dados são limpos antes de cada teste.
 
-SQLite é embutido neste projeto; não há dependência de banco remoto ou serviço que exija Testcontainers. Os testes não substituem controladores, serviços ou repositórios por mocks e não exigem Docker.
+O projeto usa PostgreSQL como banco oficial; H2 é usado somente para simular a persistência nos testes de integração. Os testes não substituem controladores, serviços ou repositórios por mocks e validam a persistência real do fluxo HTTP.
 
 ## Cobertura existente e lacunas
 
@@ -24,10 +24,10 @@ Antes desta alteração, havia testes unitários de serviços e um teste de cont
 ## Configuração e execução
 
 - Java 21 e Maven Wrapper do projeto.
-- JUnit 5, Spring Boot Test/MockMvc e SQLite JDBC já declarados no projeto.
+- JUnit 5, Spring Boot Test/MockMvc e H2 declarados no projeto.
 - Perfil de teste: `src/test/resources/application-integration.yaml`.
 - Classes terminam em `L1Test` e usam `@Tag("Layer1")`.
-- Não são necessários novos módulos, dependências ou containers.
+- O banco H2 em memória é criado automaticamente; não é necessário iniciar PostgreSQL ou configurar credenciais.
 - Execução: `powershell -ExecutionPolicy Bypass -File integration\run-layer1-tests.ps1` no Windows ou `bash integration/run-layer1-tests.sh` em sistemas Unix-like.
 
 ## Critérios de validação

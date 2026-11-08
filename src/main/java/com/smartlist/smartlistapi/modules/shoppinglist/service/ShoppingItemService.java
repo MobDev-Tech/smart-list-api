@@ -19,13 +19,13 @@ public class ShoppingItemService {
     private final ShoppingItemRepository repository;
 
     @Transactional(readOnly = true)
-    public ShoppingListGroupedDTO getGroupedItems() {
-        List<ShoppingItemResponseDTO> pending = repository.findByCompletedFalseOrderByCreatedAtDesc()
+    public ShoppingListGroupedDTO getGroupedItems(String deviceId) {
+        List<ShoppingItemResponseDTO> pending = repository.findByDeviceIdAndCompletedFalseOrderByCreatedAtDesc(deviceId)
                 .stream()
                 .map(ShoppingItemResponseDTO::fromEntity)
                 .toList();
 
-        List<ShoppingItemResponseDTO> completed = repository.findByCompletedTrueOrderByUpdatedAtDesc()
+        List<ShoppingItemResponseDTO> completed = repository.findByDeviceIdAndCompletedTrueOrderByUpdatedAtDesc(deviceId)
                 .stream()
                 .map(ShoppingItemResponseDTO::fromEntity)
                 .toList();
@@ -39,8 +39,9 @@ public class ShoppingItemService {
     }
 
     @Transactional
-    public ShoppingItemResponseDTO createItem(ShoppingItemRequestDTO dto) {
+    public ShoppingItemResponseDTO createItem(String deviceId, ShoppingItemRequestDTO dto) {
         ShoppingItemEntity item = ShoppingItemEntity.builder()
+                .deviceId(deviceId)
                 .name(dto.name())
                 .quantity(dto.quantity())
                 .category(dto.category())
@@ -50,8 +51,8 @@ public class ShoppingItemService {
     }
 
     @Transactional
-    public ShoppingItemResponseDTO updateItem(Long id, ShoppingItemRequestDTO dto) {
-        ShoppingItemEntity item = findEntityById(id);
+    public ShoppingItemResponseDTO updateItem(String deviceId, Long id, ShoppingItemRequestDTO dto) {
+        ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         item.setName(dto.name());
         item.setQuantity(dto.quantity());
         item.setCategory(dto.category());
@@ -60,26 +61,26 @@ public class ShoppingItemService {
     }
 
     @Transactional
-    public ShoppingItemResponseDTO toggleItemCompletion(Long id) {
-        ShoppingItemEntity item = findEntityById(id);
+    public ShoppingItemResponseDTO toggleItemCompletion(String deviceId, Long id) {
+        ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         item.setCompleted(!item.isCompleted());
 
         return ShoppingItemResponseDTO.fromEntity(repository.save(item));
     }
 
     @Transactional
-    public void deleteItem(Long id) {
-        ShoppingItemEntity item = findEntityById(id);
+    public void deleteItem(String deviceId, Long id) {
+        ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         repository.delete(item);
     }
 
     @Transactional
-    public void clearCompletedItems() {
-        repository.deleteByCompletedTrue();
+    public void clearCompletedItems(String deviceId) {
+        repository.deleteByDeviceIdAndCompletedTrue(deviceId);
     }
 
-    private ShoppingItemEntity findEntityById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado com o ID: " + id));
+    private ShoppingItemEntity findEntityByIdAndDeviceId(Long id, String deviceId) {
+        return repository.findByIdAndDeviceId(id, deviceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado com o ID " + id + " para este dispositivo."));
     }
 }

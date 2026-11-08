@@ -18,6 +18,9 @@ public class UserSettingsEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "device_id", nullable = false, unique = true)
+    private String deviceId;
+
     @Column(name = "remind_on_leave", nullable = false)
     private boolean remindOnLeave;
 
