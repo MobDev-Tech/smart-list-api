@@ -2,7 +2,7 @@
 
 ## Testes adicionados
 
-- `src/test/java/com/smartlist/smartlistapi/integration/SmartListApiFlowsL1Test.java` — 8 testes Layer 1 usando MockMvc, serviços reais, JPA e PostgreSQL:
+- `src/test/java/com/smartlist/smartlistapi/integration/SmartListApiFlowsL1Test.java` — 8 testes Layer 1 usando MockMvc, serviços reais, JPA e H2 em memória:
   - fluxo de criação, atualização, conclusão, consulta e exclusão de itens;
   - validação de entrada e resposta 404 para item inexistente;
   - persistência da residência e avaliação de geofence dentro e fora do raio;
@@ -13,7 +13,7 @@
 
 ## Ganhos e configuração
 
-Os cenários cobrem requisições HTTP até o banco PostgreSQL real, incluindo leitura após escrita e integração entre módulos. O perfil `integration` usa o banco dedicado `smart_list_test` em `localhost:5432`; os dados são limpos antes de cada teste. O serviço do banco deve estar disponível e as credenciais podem ser configuradas com `TEST_DB_URL`, `TEST_DB_USERNAME` e `TEST_DB_PASSWORD`.
+Os cenários cobrem requisições HTTP até o banco H2 em memória, incluindo leitura após escrita e integração entre módulos. O perfil `integration` cria um banco isolado automaticamente e limpa os dados antes de cada teste; não é necessário ter PostgreSQL disponível.
 
 ## Problemas encontrados e corrigidos
 
@@ -23,12 +23,11 @@ Os cenários cobrem requisições HTTP até o banco PostgreSQL real, incluindo l
 ## Execução final
 
 - Testes de serviço e contexto: aprovados localmente.
-- A execução limpa dos testes Layer1 encontrou 8 erros de conexão: a instância PostgreSQL na porta 5432 rejeitou a senha configurada para `postgres`.
-- Para executar Layer1, crie o banco `smart_list_test` e configure as variáveis `TEST_DB_URL`, `TEST_DB_USERNAME` e `TEST_DB_PASSWORD` para a instância local.
+- A configuração do perfil `integration` usa H2 para evitar dependência de serviço ou credenciais externas.
 
 ## Scripts para repetir
 
 - Windows: `powershell -ExecutionPolicy Bypass -File integration\run-layer1-tests.ps1`
 - Unix-like: `bash integration/run-layer1-tests.sh`
 
-Os scripts executam `verify` filtrado por `Layer1` e exibem um resumo de aprovação ou falha. O banco PostgreSQL `smart_list_test` deve estar acessível localmente; o perfil usa `create-drop`, portanto não deve apontar para um banco com dados da aplicação.
+Os scripts executam `verify` filtrado por `Layer1` e exibem um resumo de aprovação ou falha. O H2 em memória usa `create-drop` e não afeta o banco PostgreSQL da aplicação.
