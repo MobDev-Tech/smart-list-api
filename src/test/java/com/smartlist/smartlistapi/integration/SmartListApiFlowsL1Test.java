@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("integration")
 @Tag("Layer1")
-@DisplayName("Integração dos fluxos da Smart List API com PostgreSQL")
+@DisplayName("Integração dos fluxos da Smart List API com H2")
 class SmartListApiFlowsL1Test {
 
     private static final String DEVICE_ID = "device-1";
