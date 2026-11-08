@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Arquivos de ambiente e segredos locais
+.env
+.env.local
+*.env
+!.env.example
+
+# Configurações de ambiente privado do Spring Boot
+application-local.yaml
+application-local.properties
