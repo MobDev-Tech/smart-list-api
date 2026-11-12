@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
         version = "v1",
         description = "API para gerenciamento de lista de compras, configurações, residência e notificações."
     ),
-    servers = @Server(url = "http://localhost:8080", description = "Servidor local")
+    servers = @Server(url = "/", description = "Servidor atual")
 )
 public class OpenApiConfig {
 }
