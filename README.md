@@ -116,6 +116,7 @@ O Swagger documenta os endpoints implementados, seus parâmetros, corpos de requ
 ## ☁️ Deploy
 
 A API está publicada no Render: [https://smart-list-api.onrender.com](https://smart-list-api.onrender.com).
+Você também pode acessar a documentação interativa do Swagger em [https://smart-list-api.onrender.com/swagger-ui.html](https://smart-list-api.onrender.com/swagger-ui.html).
 
 ## 🧪 Executando os testes
 
