@@ -113,6 +113,10 @@ http://localhost:8080/v3/api-docs
 
 O Swagger documenta os endpoints implementados, seus parâmetros, corpos de requisição, respostas e os esquemas dos DTOs.
 
+## ☁️ Deploy
+
+A API está publicada no Render: [https://smart-list-api.onrender.com](https://smart-list-api.onrender.com).
+
 ## 🧪 Executando os testes
 
 No Windows:
