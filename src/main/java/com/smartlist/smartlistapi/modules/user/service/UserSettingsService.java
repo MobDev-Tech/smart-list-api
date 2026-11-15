@@ -20,6 +20,9 @@ public class UserSettingsService {
     private final UserSettingsRepository repository;
     private final ResidenceService residenceService;
 
+    /**
+     * Recupera as configurações do dispositivo ou cria as configurações padrão se necessário.
+     */
     @Transactional
     public UserSettingsResponseDTO getSettings(String deviceId) {
         UserSettingsEntity entity = repository.findByDeviceId(deviceId)
@@ -27,6 +30,9 @@ public class UserSettingsService {
         return UserSettingsResponseDTO.fromEntity(entity);
     }
 
+    /**
+     * Atualiza as preferências e permissões do dispositivo.
+     */
     @Transactional
     public UserSettingsResponseDTO updateSettings(String deviceId, UserSettingsRequestDTO dto) {
         UserSettingsEntity entity = repository.findByDeviceId(deviceId)
@@ -40,6 +46,9 @@ public class UserSettingsService {
         return UserSettingsResponseDTO.fromEntity(repository.save(entity));
     }
 
+    /**
+     * Reúne permissões e estado da residência para informar se o dispositivo está pronto.
+     */
     @Transactional
     public SystemDiagnosticResponseDTO getDiagnostic(String deviceId) {
         UserSettingsEntity settings = repository.findByDeviceId(deviceId)
@@ -73,6 +82,9 @@ public class UserSettingsService {
         );
     }
 
+    /**
+     * Cria e persiste as configurações iniciais padrão do dispositivo.
+     */
     private UserSettingsEntity createDefaultSettings(String deviceId) {
         UserSettingsEntity defaultSettings = UserSettingsEntity.builder()
                 .deviceId(deviceId)
