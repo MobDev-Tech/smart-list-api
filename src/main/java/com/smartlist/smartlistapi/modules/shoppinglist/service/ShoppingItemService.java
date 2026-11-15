@@ -18,6 +18,9 @@ public class ShoppingItemService {
 
     private final ShoppingItemRepository repository;
 
+    /**
+     * Busca os itens do dispositivo e os separa entre pendentes e concluídos.
+     */
     @Transactional(readOnly = true)
     public ShoppingListGroupedDTO getGroupedItems(String deviceId) {
         List<ShoppingItemResponseDTO> pending = repository.findByDeviceIdAndCompletedFalseOrderByCreatedAtDesc(deviceId)
@@ -38,6 +41,9 @@ public class ShoppingItemService {
         );
     }
 
+    /**
+     * Cria um item de compra associado ao dispositivo informado.
+     */
     @Transactional
     public ShoppingItemResponseDTO createItem(String deviceId, ShoppingItemRequestDTO dto) {
         ShoppingItemEntity item = ShoppingItemEntity.builder()
@@ -50,6 +56,9 @@ public class ShoppingItemService {
         return ShoppingItemResponseDTO.fromEntity(repository.save(item));
     }
 
+    /**
+     * Atualiza nome, quantidade e categoria de um item pertencente ao dispositivo.
+     */
     @Transactional
     public ShoppingItemResponseDTO updateItem(String deviceId, Long id, ShoppingItemRequestDTO dto) {
         ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
@@ -60,6 +69,9 @@ public class ShoppingItemService {
         return ShoppingItemResponseDTO.fromEntity(repository.save(item));
     }
 
+    /**
+     * Inverte o estado de conclusão de um item pertencente ao dispositivo.
+     */
     @Transactional
     public ShoppingItemResponseDTO toggleItemCompletion(String deviceId, Long id) {
         ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
@@ -68,17 +80,26 @@ public class ShoppingItemService {
         return ShoppingItemResponseDTO.fromEntity(repository.save(item));
     }
 
+    /**
+     * Exclui um item pertencente ao dispositivo informado.
+     */
     @Transactional
     public void deleteItem(String deviceId, Long id) {
         ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         repository.delete(item);
     }
 
+    /**
+     * Exclui todos os itens concluídos do dispositivo informado.
+     */
     @Transactional
     public void clearCompletedItems(String deviceId) {
         repository.deleteByDeviceIdAndCompletedTrue(deviceId);
     }
 
+    /**
+     * Busca um item pelo ID e dispositivo, lançando exceção se não for encontrado.
+     */
     private ShoppingItemEntity findEntityByIdAndDeviceId(Long id, String deviceId) {
         return repository.findByIdAndDeviceId(id, deviceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado com o ID " + id + " para este dispositivo."));
