@@ -13,9 +13,15 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Centraliza o tratamento de exceções da API e converte falhas em respostas HTTP padronizadas.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Converte erros de validação dos campos em uma resposta HTTP 400 com os detalhes por campo.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -33,6 +39,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    /**
+     * Converte uma exceção de recurso não encontrado em uma resposta HTTP 404.
+     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFoundException(ResourceNotFoundException ex) {
         ApiErrorResponse response = new ApiErrorResponse(
@@ -42,6 +51,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    /**
+     * Retorna uma resposta HTTP 404 quando uma rota ou recurso estático não existe.
+     */
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
@@ -51,6 +63,9 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * Converte exceções não tratadas especificamente em uma resposta HTTP 500 genérica.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex) {
         ApiErrorResponse response = new ApiErrorResponse(
