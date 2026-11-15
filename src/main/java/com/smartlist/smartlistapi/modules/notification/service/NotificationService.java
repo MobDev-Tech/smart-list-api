@@ -25,6 +25,9 @@ public class NotificationService {
     private final ResidenceService residenceService;
     private final ShoppingItemService shoppingItemService;
 
+    /**
+     * Ativa a pausa de lembretes do dispositivo pela opção selecionada.
+     */
     @Transactional
     public SnoozeResponseDTO applySnooze(String deviceId, SnoozeRequestDTO dto) {
         SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId)
@@ -43,6 +46,9 @@ public class NotificationService {
         return SnoozeResponseDTO.fromEntity(snooze, message);
     }
 
+    /**
+     * Cancela a pausa de lembretes e reativa o monitoramento para o dispositivo.
+     */
     @Transactional
     public SnoozeResponseDTO cancelSnooze(String deviceId) {
         SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId)
@@ -57,6 +63,9 @@ public class NotificationService {
         return SnoozeResponseDTO.fromEntity(snooze, "Monitoramento de lembretes reativado.");
     }
 
+    /**
+     * Avalia os itens pendentes, a pausa de lembretes e a geofence para decidir se notifica.
+     */
     @Transactional(readOnly = true)
     public NotificationTriggerResponseDTO evaluateNotificationTrigger(String deviceId, NotificationTriggerRequestDTO dto) {
         // 1. Checa itens pendentes na lista EXCLUSIVAS deste celular
@@ -116,6 +125,9 @@ public class NotificationService {
         );
     }
 
+    /**
+     * Calcula o fim da pausa conforme a opção; pausas indefinidas não têm horário de término.
+     */
     private LocalDateTime calculateSnoozeUntil(SnoozeOptionEnum option) {
         LocalDateTime now = LocalDateTime.now();
         return switch (option) {
