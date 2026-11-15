@@ -20,6 +20,9 @@ public class ResidenceService {
 
     private final ResidenceRepository repository;
 
+    /**
+     * Recupera a residência cadastrada para o dispositivo.
+     */
     @Transactional(readOnly = true, noRollbackFor = ResourceNotFoundException.class)
     public ResidenceResponseDTO getResidence(String deviceId) {
         ResidenceEntity entity = repository.findByDeviceId(deviceId)
@@ -27,6 +30,9 @@ public class ResidenceService {
         return ResidenceResponseDTO.fromEntity(entity);
     }
 
+    /**
+     * Cria ou atualiza os dados residenciais e as configurações de geofence do dispositivo.
+     */
     @Transactional
     public ResidenceResponseDTO saveOrUpdateResidence(String deviceId, ResidenceRequestDTO dto) {
         ResidenceEntity entity = repository.findByDeviceId(deviceId)
@@ -42,6 +48,9 @@ public class ResidenceService {
         return ResidenceResponseDTO.fromEntity(repository.save(entity));
     }
 
+    /**
+     * Verifica se a posição atual está dentro do raio residencial fixo do dispositivo.
+     */
     @Transactional(readOnly = true)
     public GeofenceCheckResponseDTO checkGeofenceStatus(String deviceId, GeofenceCheckRequestDTO dto) {
         ResidenceEntity residence = repository.findByDeviceId(deviceId)
@@ -66,6 +75,9 @@ public class ResidenceService {
         );
     }
 
+    /**
+     * Calcula a distância em metros entre duas coordenadas geográficas pela fórmula de Haversine.
+     */
     private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
