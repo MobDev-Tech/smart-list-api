@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -7,21 +7,11 @@ import { PrimaryButton } from '../components/ui/PrimaryButton';
 import { Screen } from '../components/ui/Screen';
 import { StatusBanner } from '../components/ui/StatusBanner';
 import { colors, radii, spacing, typography } from '../constants/design-tokens';
-import { completeOnboarding } from '../lib/storage';
 
 const radiusOptions = [100, 150, 200, 300] as const;
 
 export default function ResidenceScreen() {
   const [radius, setRadius] = useState<number>(150);
-  const { from } = useLocalSearchParams<{ from?: string }>();
-
-  async function saveResidence() {
-    if (from === 'onboarding') {
-      await completeOnboarding();
-    }
-
-    router.replace('/(tabs)/list');
-  }
 
   return (
     <Screen>
@@ -58,7 +48,7 @@ export default function ResidenceScreen() {
         </View>
       </View>
 
-      <PrimaryButton label="Salvar configuração" onPress={saveResidence} />
+      <PrimaryButton label="Salvar configuração" onPress={() => router.replace('/(tabs)/list')} />
       <Pressable onPress={() => router.back()} style={styles.cancel}>
         <Text style={styles.cancelText}>Voltar</Text>
       </Pressable>
