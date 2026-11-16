@@ -1,5 +1,6 @@
 export const colors = {
   surface: '#FAF8FF',
+  surfaceContainerLowest: '#FFFFFF',
   surfaceContainerLow: '#F2F3FF',
   surfaceContainer: '#EAEDFF',
   surfaceContainerHigh: '#E2E7FF',
@@ -7,7 +8,7 @@ export const colors = {
   onSurface: '#131B2E',
   onSurfaceVariant: '#3E4A3D',
   outline: '#6E7B6C',
-  outlineVariant: '#BD CABA'.replace(' ', ''),
+  outlineVariant: '#BDCABA',
   primary: '#006B2C',
   primaryContainer: '#00873A',
   onPrimary: '#FFFFFF',
