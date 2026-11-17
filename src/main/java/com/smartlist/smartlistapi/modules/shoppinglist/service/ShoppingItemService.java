@@ -6,6 +6,8 @@ import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingItemRequestDT
 import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingItemResponseDTO;
 import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingListGroupedDTO;
 import com.smartlist.smartlistapi.modules.shoppinglist.repository.ShoppingItemRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ShoppingItemService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ShoppingItemService.class);
 
     private final ShoppingItemRepository repository;
 
@@ -53,7 +57,9 @@ public class ShoppingItemService {
                 .category(dto.category())
                 .build();
 
-        return ShoppingItemResponseDTO.fromEntity(repository.save(item));
+        ShoppingItemEntity savedItem = repository.save(item);
+        logger.info("shopping_item_created itemId={}", savedItem.getId());
+        return ShoppingItemResponseDTO.fromEntity(savedItem);
     }
 
     /**
@@ -66,7 +72,9 @@ public class ShoppingItemService {
         item.setQuantity(dto.quantity());
         item.setCategory(dto.category());
 
-        return ShoppingItemResponseDTO.fromEntity(repository.save(item));
+        ShoppingItemEntity savedItem = repository.save(item);
+        logger.info("shopping_item_updated itemId={}", savedItem.getId());
+        return ShoppingItemResponseDTO.fromEntity(savedItem);
     }
 
     /**
@@ -77,7 +85,10 @@ public class ShoppingItemService {
         ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         item.setCompleted(!item.isCompleted());
 
-        return ShoppingItemResponseDTO.fromEntity(repository.save(item));
+        ShoppingItemEntity savedItem = repository.save(item);
+        logger.info("shopping_item_completion_changed itemId={} completed={}",
+                savedItem.getId(), savedItem.isCompleted());
+        return ShoppingItemResponseDTO.fromEntity(savedItem);
     }
 
     /**
@@ -87,6 +98,7 @@ public class ShoppingItemService {
     public void deleteItem(String deviceId, Long id) {
         ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         repository.delete(item);
+        logger.info("shopping_item_deleted itemId={}", id);
     }
 
     /**
@@ -95,6 +107,7 @@ public class ShoppingItemService {
     @Transactional
     public void clearCompletedItems(String deviceId) {
         repository.deleteByDeviceIdAndCompletedTrue(deviceId);
+        logger.info("completed_shopping_items_cleared");
     }
 
     /**
