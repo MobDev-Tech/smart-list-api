@@ -1,5 +1,6 @@
 package com.smartlist.smartlistapi.modules.user.service;
 
+import com.smartlist.smartlistapi.common.exception.ResourceNotFoundException;
 import com.smartlist.smartlistapi.modules.geofence.dto.ResidenceResponseDTO;
 import com.smartlist.smartlistapi.modules.geofence.service.ResidenceService;
 import com.smartlist.smartlistapi.modules.user.domain.LocationPermissionEnum;
@@ -65,7 +66,7 @@ public class UserSettingsService {
                         ? "Monitoramento Geofence Ativo" 
                         : "Monitoramento Desativado";
             }
-        } catch (Exception ignored) {
+        } catch (ResourceNotFoundException ignored) {
             // Se a residência ainda não foi cadastrada para este dispositivo, mantemos a mensagem padrão
         }
 
