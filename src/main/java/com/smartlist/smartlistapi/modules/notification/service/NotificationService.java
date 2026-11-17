@@ -9,6 +9,8 @@ import com.smartlist.smartlistapi.modules.notification.dto.*;
 import com.smartlist.smartlistapi.modules.notification.repository.SnoozeRepository;
 import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingListGroupedDTO;
 import com.smartlist.smartlistapi.modules.shoppinglist.service.ShoppingItemService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     private final SnoozeRepository snoozeRepository;
     private final ResidenceService residenceService;
@@ -38,6 +42,7 @@ public class NotificationService {
         snooze.setSnoozedUntil(calculateSnoozeUntil(dto.option()));
 
         snoozeRepository.save(snooze);
+        logger.info("snooze_activated option={} until={}", snooze.getOption(), snooze.getSnoozedUntil());
 
         String message = dto.option() == SnoozeOptionEnum.INDEFINITE
                 ? "Lembretes pausados até reativação manual."
@@ -59,6 +64,7 @@ public class NotificationService {
         snooze.setSnoozedUntil(null);
 
         snoozeRepository.save(snooze);
+        logger.info("snooze_cancelled");
 
         return SnoozeResponseDTO.fromEntity(snooze, "Monitoramento de lembretes reativado.");
     }
@@ -71,6 +77,7 @@ public class NotificationService {
         // 1. Checa itens pendentes na lista EXCLUSIVAS deste celular
         ShoppingListGroupedDTO groupedItems = shoppingItemService.getGroupedItems(deviceId);
         if (groupedItems.pendingCount() == 0) {
+            logger.info("notification_decision shouldNotify=false reason=no_pending_items pendingCount=0");
             return new NotificationTriggerResponseDTO(
                     false,
                     "Nenhum item pendente na lista de compras.",
@@ -83,6 +90,8 @@ public class NotificationService {
         SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId).orElse(null);
         if (snooze != null && snooze.isActive()) {
             if (snooze.getOption() == SnoozeOptionEnum.INDEFINITE) {
+                logger.info("notification_decision shouldNotify=false reason=indefinite_snooze pendingCount={}",
+                        groupedItems.pendingCount());
                 return new NotificationTriggerResponseDTO(
                         false,
                         "Notificações estão pausadas manualmente (Modo Soneca Indefinido).",
@@ -92,6 +101,8 @@ public class NotificationService {
             }
 
             if (snooze.getSnoozedUntil() != null && LocalDateTime.now().isBefore(snooze.getSnoozedUntil())) {
+                logger.info("notification_decision shouldNotify=false reason=temporary_snooze until={} pendingCount={}",
+                        snooze.getSnoozedUntil(), groupedItems.pendingCount());
                 return new NotificationTriggerResponseDTO(
                         false,
                         "Modo soneca ativo até: " + snooze.getSnoozedUntil(),
@@ -108,6 +119,8 @@ public class NotificationService {
         );
 
         if (geofence.insidePerimeter()) {
+            logger.info("notification_decision shouldNotify=false reason=inside_perimeter pendingCount={}",
+                    groupedItems.pendingCount());
             return new NotificationTriggerResponseDTO(
                     false,
                     "Dispositivo ainda está dentro do raio residencial.",
@@ -117,6 +130,8 @@ public class NotificationService {
         }
 
         // 4. Tudo certo -> Disparar Notificação!
+        logger.info("notification_decision shouldNotify=true reason=outside_perimeter_with_pending_items pendingCount={}",
+                groupedItems.pendingCount());
         return new NotificationTriggerResponseDTO(
                 true,
                 "Afastamento detectado com itens pendentes na lista!",
