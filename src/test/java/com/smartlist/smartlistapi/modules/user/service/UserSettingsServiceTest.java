@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -104,6 +105,15 @@ class UserSettingsServiceTest {
         assertFalse(result.isSystemReady());
         assertFalse(result.isResidenceConfigured());
         assertEquals("Residência não configurada", result.residenceStatusMessage());
+    }
+
+    @Test
+    @DisplayName("Deve propagar falhas inesperadas ao consultar residência no diagnóstico")
+    void dadaFalhaInesperadaAoConsultarResidencia_quandoDiagnosticoConsultado_entaoPropagarExcecao() {
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(settings()));
+        when(residenceService.getResidence(DEVICE_ID)).thenThrow(new IllegalStateException("Falha inesperada"));
+
+        assertThrows(IllegalStateException.class, () -> service.getDiagnostic(DEVICE_ID));
     }
 
     @Test
