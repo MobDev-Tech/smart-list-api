@@ -1,6 +1,8 @@
 package com.smartlist.smartlistapi.common.exception;
 
 import com.smartlist.smartlistapi.common.dto.ApiErrorResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,6 +20,8 @@ import java.util.Map;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Converte erros de validação dos campos em uma resposta HTTP 400 com os detalhes por campo.
@@ -68,6 +72,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex) {
+        logger.error("Unhandled exception while processing request", ex);
         ApiErrorResponse response = new ApiErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "Ocorreu um erro interno inesperado no servidor."
