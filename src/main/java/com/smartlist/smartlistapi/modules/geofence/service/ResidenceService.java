@@ -51,6 +51,7 @@ public class ResidenceService {
         entity.setGeofenceActive(dto.geofenceActive() != null ? dto.geofenceActive() : true);
 
         ResidenceEntity savedResidence = repository.save(entity);
+        // Identifica criação/atualização e estado do perímetro sem registrar endereço ou coordenadas.
         logger.info("residence_{} id={} geofenceActive={} radiusMeters={}",
                 existingResidence.isPresent() ? "updated" : "created",
                 savedResidence.getId(),
@@ -74,6 +75,7 @@ public class ResidenceService {
 
         // Valida contra o raio fixo de 150 metros
         boolean isInside = distance <= FIXED_MONITORING_RADIUS_METERS;
+        // Registra a decisão e a distância arredondada para ajudar a investigar o limite do perímetro.
         logger.info("geofence_check insidePerimeter={} distanceMeters={} radiusMeters={}",
                 isInside, Math.round(distance), FIXED_MONITORING_RADIUS_METERS);
         String message = isInside 

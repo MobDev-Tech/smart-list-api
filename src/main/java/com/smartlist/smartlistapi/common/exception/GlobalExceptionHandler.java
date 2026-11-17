@@ -72,6 +72,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex) {
+        // Registra falhas inesperadas com stack trace para facilitar a investigação do erro 500.
         logger.error("Unhandled exception while processing request", ex);
         ApiErrorResponse response = new ApiErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),

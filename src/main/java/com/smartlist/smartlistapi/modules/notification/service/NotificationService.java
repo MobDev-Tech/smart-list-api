@@ -42,6 +42,7 @@ public class NotificationService {
         snooze.setSnoozedUntil(calculateSnoozeUntil(dto.option()));
 
         snoozeRepository.save(snooze);
+        // Registra a opção escolhida e até quando os lembretes ficarão pausados.
         logger.info("snooze_activated option={} until={}", snooze.getOption(), snooze.getSnoozedUntil());
 
         String message = dto.option() == SnoozeOptionEnum.INDEFINITE
@@ -64,6 +65,7 @@ public class NotificationService {
         snooze.setSnoozedUntil(null);
 
         snoozeRepository.save(snooze);
+        // Registra que a pausa foi cancelada e os lembretes foram reativados.
         logger.info("snooze_cancelled");
 
         return SnoozeResponseDTO.fromEntity(snooze, "Monitoramento de lembretes reativado.");
@@ -77,6 +79,7 @@ public class NotificationService {
         // 1. Checa itens pendentes na lista EXCLUSIVAS deste celular
         ShoppingListGroupedDTO groupedItems = shoppingItemService.getGroupedItems(deviceId);
         if (groupedItems.pendingCount() == 0) {
+            // Explica a decisão de não notificar quando não há itens pendentes.
             logger.info("notification_decision shouldNotify=false reason=no_pending_items pendingCount=0");
             return new NotificationTriggerResponseDTO(
                     false,
@@ -90,6 +93,7 @@ public class NotificationService {
         SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId).orElse(null);
         if (snooze != null && snooze.isActive()) {
             if (snooze.getOption() == SnoozeOptionEnum.INDEFINITE) {
+                // Explica a decisão de não notificar devido à pausa manual indefinida.
                 logger.info("notification_decision shouldNotify=false reason=indefinite_snooze pendingCount={}",
                         groupedItems.pendingCount());
                 return new NotificationTriggerResponseDTO(
@@ -101,6 +105,7 @@ public class NotificationService {
             }
 
             if (snooze.getSnoozedUntil() != null && LocalDateTime.now().isBefore(snooze.getSnoozedUntil())) {
+                // Explica a decisão de não notificar e informa o fim da pausa temporária.
                 logger.info("notification_decision shouldNotify=false reason=temporary_snooze until={} pendingCount={}",
                         snooze.getSnoozedUntil(), groupedItems.pendingCount());
                 return new NotificationTriggerResponseDTO(
@@ -119,6 +124,7 @@ public class NotificationService {
         );
 
         if (geofence.insidePerimeter()) {
+            // Explica a decisão de não notificar porque o dispositivo está dentro do perímetro.
             logger.info("notification_decision shouldNotify=false reason=inside_perimeter pendingCount={}",
                     groupedItems.pendingCount());
             return new NotificationTriggerResponseDTO(
@@ -130,6 +136,7 @@ public class NotificationService {
         }
 
         // 4. Tudo certo -> Disparar Notificação!
+        // Registra que os itens pendentes e a saída do perímetro habilitaram a notificação.
         logger.info("notification_decision shouldNotify=true reason=outside_perimeter_with_pending_items pendingCount={}",
                 groupedItems.pendingCount());
         return new NotificationTriggerResponseDTO(

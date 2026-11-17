@@ -58,6 +58,7 @@ public class ShoppingItemService {
                 .build();
 
         ShoppingItemEntity savedItem = repository.save(item);
+        // Registra o ID criado sem expor o conteúdo do item ou o dispositivo associado.
         logger.info("shopping_item_created itemId={}", savedItem.getId());
         return ShoppingItemResponseDTO.fromEntity(savedItem);
     }
@@ -73,6 +74,7 @@ public class ShoppingItemService {
         item.setCategory(dto.category());
 
         ShoppingItemEntity savedItem = repository.save(item);
+        // Registra qual item foi atualizado para permitir rastrear a alteração.
         logger.info("shopping_item_updated itemId={}", savedItem.getId());
         return ShoppingItemResponseDTO.fromEntity(savedItem);
     }
@@ -86,6 +88,7 @@ public class ShoppingItemService {
         item.setCompleted(!item.isCompleted());
 
         ShoppingItemEntity savedItem = repository.save(item);
+        // Registra a mudança de conclusão e o novo estado do item.
         logger.info("shopping_item_completion_changed itemId={} completed={}",
                 savedItem.getId(), savedItem.isCompleted());
         return ShoppingItemResponseDTO.fromEntity(savedItem);
@@ -98,6 +101,7 @@ public class ShoppingItemService {
     public void deleteItem(String deviceId, Long id) {
         ShoppingItemEntity item = findEntityByIdAndDeviceId(id, deviceId);
         repository.delete(item);
+        // Confirma no log a exclusão do item identificado.
         logger.info("shopping_item_deleted itemId={}", id);
     }
 
@@ -107,6 +111,7 @@ public class ShoppingItemService {
     @Transactional
     public void clearCompletedItems(String deviceId) {
         repository.deleteByDeviceIdAndCompletedTrue(deviceId);
+        // Indica que a limpeza dos itens concluídos foi executada, sem registrar o dispositivo.
         logger.info("completed_shopping_items_cleared");
     }
 
