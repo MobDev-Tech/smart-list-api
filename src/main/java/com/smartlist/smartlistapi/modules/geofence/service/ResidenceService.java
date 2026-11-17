@@ -7,6 +7,8 @@ import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckResponseDTO;
 import com.smartlist.smartlistapi.modules.geofence.dto.ResidenceRequestDTO;
 import com.smartlist.smartlistapi.modules.geofence.dto.ResidenceResponseDTO;
 import com.smartlist.smartlistapi.modules.geofence.repository.ResidenceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ResidenceService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ResidenceService.class);
 
     private static final double EARTH_RADIUS_METERS = 6371000.0;
     private static final int FIXED_MONITORING_RADIUS_METERS = 150; // Raio fixo de 150m para o MVP
@@ -35,7 +39,8 @@ public class ResidenceService {
      */
     @Transactional
     public ResidenceResponseDTO saveOrUpdateResidence(String deviceId, ResidenceRequestDTO dto) {
-        ResidenceEntity entity = repository.findByDeviceId(deviceId)
+        var existingResidence = repository.findByDeviceId(deviceId);
+        ResidenceEntity entity = existingResidence
                 .orElseGet(() -> ResidenceEntity.builder().deviceId(deviceId).build());
 
         entity.setAddress(dto.address());
@@ -45,7 +50,13 @@ public class ResidenceService {
         entity.setRadiusMeters(FIXED_MONITORING_RADIUS_METERS); // Força sempre 150m
         entity.setGeofenceActive(dto.geofenceActive() != null ? dto.geofenceActive() : true);
 
-        return ResidenceResponseDTO.fromEntity(repository.save(entity));
+        ResidenceEntity savedResidence = repository.save(entity);
+        logger.info("residence_{} id={} geofenceActive={} radiusMeters={}",
+                existingResidence.isPresent() ? "updated" : "created",
+                savedResidence.getId(),
+                savedResidence.isGeofenceActive(),
+                savedResidence.getRadiusMeters());
+        return ResidenceResponseDTO.fromEntity(savedResidence);
     }
 
     /**
@@ -63,6 +74,8 @@ public class ResidenceService {
 
         // Valida contra o raio fixo de 150 metros
         boolean isInside = distance <= FIXED_MONITORING_RADIUS_METERS;
+        logger.info("geofence_check insidePerimeter={} distanceMeters={} radiusMeters={}",
+                isInside, Math.round(distance), FIXED_MONITORING_RADIUS_METERS);
         String message = isInside 
                 ? "Dispositivo dentro do perímetro residencial (150m)" 
                 : String.format("Afastamento de %.0fm da residência detectado (limite: 150m)", distance);
