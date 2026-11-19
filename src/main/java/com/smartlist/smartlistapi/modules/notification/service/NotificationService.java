@@ -2,6 +2,7 @@ package com.smartlist.smartlistapi.modules.notification.service;
 
 import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckRequestDTO;
 import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckResponseDTO;
+import com.smartlist.smartlistapi.modules.geofence.dto.ResidenceResponseDTO;
 import com.smartlist.smartlistapi.modules.geofence.service.ResidenceService;
 import com.smartlist.smartlistapi.modules.notification.domain.SnoozeEntity;
 import com.smartlist.smartlistapi.modules.notification.domain.SnoozeOptionEnum;
@@ -9,6 +10,10 @@ import com.smartlist.smartlistapi.modules.notification.dto.*;
 import com.smartlist.smartlistapi.modules.notification.repository.SnoozeRepository;
 import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingListGroupedDTO;
 import com.smartlist.smartlistapi.modules.shoppinglist.service.ShoppingItemService;
+import com.smartlist.smartlistapi.modules.user.domain.LocationPermissionEnum;
+import com.smartlist.smartlistapi.modules.user.domain.NotificationPermissionEnum;
+import com.smartlist.smartlistapi.modules.user.dto.UserSettingsResponseDTO;
+import com.smartlist.smartlistapi.modules.user.service.UserSettingsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +33,21 @@ public class NotificationService {
     private final SnoozeRepository snoozeRepository;
     private final ResidenceService residenceService;
     private final ShoppingItemService shoppingItemService;
+    private final UserSettingsService userSettingsService;
+
+    @Transactional(readOnly = true)
+    public SnoozeResponseDTO getSnooze(String deviceId) {
+        SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId).orElse(null);
+        if (snooze == null || !snooze.isActive()) {
+            return new SnoozeResponseDTO(false, null, null, "Lembretes ativos.");
+        }
+        if (snooze.getOption() != SnoozeOptionEnum.INDEFINITE
+                && snooze.getSnoozedUntil() != null
+                && !LocalDateTime.now().isBefore(snooze.getSnoozedUntil())) {
+            return new SnoozeResponseDTO(false, null, null, "Lembretes ativos.");
+        }
+        return SnoozeResponseDTO.fromEntity(snooze, "Lembretes pausados.");
+    }
 
     /**
      * Ativa a pausa de lembretes do dispositivo pela opção selecionada.
@@ -89,6 +109,15 @@ public class NotificationService {
             );
         }
 
+        UserSettingsResponseDTO settings = userSettingsService.getSettings(deviceId);
+        if (!settings.remindOnLeave()
+                || settings.notificationPermission() != NotificationPermissionEnum.PERMITIDO
+                || settings.locationPermission() != LocationPermissionEnum.SEMPRE_PERMITIDA) {
+            return new NotificationTriggerResponseDTO(false,
+                    "Lembretes desativados ou permissões insuficientes.",
+                    groupedItems.pendingCount(), List.of());
+        }
+
         // 2. Checa estado de Soneca EXCLUSIVO deste celular
         SnoozeEntity snooze = snoozeRepository.findByDeviceId(deviceId).orElse(null);
         if (snooze != null && snooze.isActive()) {
@@ -118,6 +147,12 @@ public class NotificationService {
         }
 
         // 3. Checa Geofence (posição atual vs residência cadastrada para este celular)
+        ResidenceResponseDTO residence = residenceService.getResidence(deviceId);
+        if (!residence.geofenceActive()) {
+            return new NotificationTriggerResponseDTO(false,
+                    "Monitoramento residencial desativado.",
+                    groupedItems.pendingCount(), List.of());
+        }
         GeofenceCheckResponseDTO geofence = residenceService.checkGeofenceStatus(
                 deviceId,
                 new GeofenceCheckRequestDTO(dto.currentLatitude(), dto.currentLongitude())

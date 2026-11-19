@@ -20,7 +20,7 @@ public class ResidenceService {
     private static final Logger logger = LoggerFactory.getLogger(ResidenceService.class);
 
     private static final double EARTH_RADIUS_METERS = 6371000.0;
-    private static final int FIXED_MONITORING_RADIUS_METERS = 150; // Raio fixo de 150m para o MVP
+    private static final int DEFAULT_MONITORING_RADIUS_METERS = 150;
 
     private final ResidenceRepository repository;
 
@@ -47,7 +47,7 @@ public class ResidenceService {
         entity.setComplement(dto.complement());
         entity.setLatitude(dto.latitude());
         entity.setLongitude(dto.longitude());
-        entity.setRadiusMeters(FIXED_MONITORING_RADIUS_METERS); // Força sempre 150m
+        entity.setRadiusMeters(dto.radiusMeters() != null ? dto.radiusMeters() : DEFAULT_MONITORING_RADIUS_METERS);
         entity.setGeofenceActive(dto.geofenceActive() != null ? dto.geofenceActive() : true);
 
         ResidenceEntity savedResidence = repository.save(entity);
@@ -61,7 +61,7 @@ public class ResidenceService {
     }
 
     /**
-     * Verifica se a posição atual está dentro do raio residencial fixo do dispositivo.
+     * Verifica se a posição atual está dentro do raio residencial configurado para o dispositivo.
      */
     @Transactional(readOnly = true)
     public GeofenceCheckResponseDTO checkGeofenceStatus(String deviceId, GeofenceCheckRequestDTO dto) {
@@ -73,19 +73,19 @@ public class ResidenceService {
                 residence.getLatitude(), residence.getLongitude()
         );
 
-        // Valida contra o raio fixo de 150 metros
-        boolean isInside = distance <= FIXED_MONITORING_RADIUS_METERS;
+        int radiusMeters = residence.getRadiusMeters();
+        boolean isInside = distance <= radiusMeters;
         // Registra a decisão e a distância arredondada para ajudar a investigar o limite do perímetro.
         logger.info("geofence_check insidePerimeter={} distanceMeters={} radiusMeters={}",
-                isInside, Math.round(distance), FIXED_MONITORING_RADIUS_METERS);
+                isInside, Math.round(distance), radiusMeters);
         String message = isInside 
-                ? "Dispositivo dentro do perímetro residencial (150m)" 
-                : String.format("Afastamento de %.0fm da residência detectado (limite: 150m)", distance);
+                ? String.format("Dispositivo dentro do perímetro residencial (%dm)", radiusMeters)
+                : String.format("Afastamento de %.0fm da residência detectado (limite: %dm)", distance, radiusMeters);
 
         return new GeofenceCheckResponseDTO(
                 isInside,
                 Math.round(distance * 100.0) / 100.0,
-                FIXED_MONITORING_RADIUS_METERS,
+                radiusMeters,
                 message
         );
     }

@@ -24,6 +24,13 @@ public class NotificationController {
 
     private final NotificationService service;
 
+    @GetMapping("/snooze")
+    @Operation(summary = "Consultar pausa de lembretes")
+    public ResponseEntity<SnoozeResponseDTO> getSnooze(
+            @RequestHeader("X-Device-ID") String deviceId) {
+        return ResponseEntity.ok(service.getSnooze(deviceId));
+    }
+
     @PostMapping("/snooze")
     @Operation(summary = "Pausar lembretes")
     @ApiResponse(responseCode = "400", description = "Opção de pausa inválida",

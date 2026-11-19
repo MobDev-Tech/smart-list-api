@@ -2,6 +2,7 @@ package com.smartlist.smartlistapi.modules.notification.service;
 
 import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckRequestDTO;
 import com.smartlist.smartlistapi.modules.geofence.dto.GeofenceCheckResponseDTO;
+import com.smartlist.smartlistapi.modules.geofence.dto.ResidenceResponseDTO;
 import com.smartlist.smartlistapi.modules.geofence.service.ResidenceService;
 import com.smartlist.smartlistapi.modules.notification.domain.SnoozeEntity;
 import com.smartlist.smartlistapi.modules.notification.domain.SnoozeOptionEnum;
@@ -13,6 +14,10 @@ import com.smartlist.smartlistapi.modules.notification.repository.SnoozeReposito
 import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingItemResponseDTO;
 import com.smartlist.smartlistapi.modules.shoppinglist.dto.ShoppingListGroupedDTO;
 import com.smartlist.smartlistapi.modules.shoppinglist.service.ShoppingItemService;
+import com.smartlist.smartlistapi.modules.user.domain.LocationPermissionEnum;
+import com.smartlist.smartlistapi.modules.user.domain.NotificationPermissionEnum;
+import com.smartlist.smartlistapi.modules.user.dto.UserSettingsResponseDTO;
+import com.smartlist.smartlistapi.modules.user.service.UserSettingsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +55,9 @@ class NotificationServiceTest {
 
     @Mock
     private ShoppingItemService shoppingItemService;
+
+    @Mock
+    private UserSettingsService userSettingsService;
 
     @InjectMocks
     private NotificationService service;
@@ -123,9 +131,39 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("Não deve notificar sem permissão de localização em segundo plano")
+    void dadaPermissaoInsuficiente_quandoGatilhoAvaliado_entaoNaoNotificar() {
+        when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(userSettingsService.getSettings(DEVICE_ID)).thenReturn(
+                new UserSettingsResponseDTO(1L, true, true,
+                        NotificationPermissionEnum.PERMITIDO, LocationPermissionEnum.APENAS_DURANTE_USO));
+
+        NotificationTriggerResponseDTO result = service.evaluateNotificationTrigger(DEVICE_ID, request());
+
+        assertFalse(result.shouldNotify());
+        assertEquals(2, result.pendingItemsCount());
+        verify(residenceService, never()).checkGeofenceStatus(any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve informar que uma soneca expirada não está mais ativa")
+    void dadaSonecaExpirada_quandoConsultada_entaoRetornarInativa() {
+        when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(
+                SnoozeEntity.builder().deviceId(DEVICE_ID).active(true)
+                        .option(SnoozeOptionEnum.MINUTES_30)
+                        .snoozedUntil(LocalDateTime.now().minusMinutes(1)).build()));
+
+        SnoozeResponseDTO result = service.getSnooze(DEVICE_ID);
+
+        assertFalse(result.active());
+        assertNull(result.option());
+    }
+
+    @Test
     @DisplayName("Não deve notificar durante uma soneca indefinida")
     void dadaSonecaIndefinidaAtiva_quandoGatilhoAvaliado_entaoNaoNotificar() {
         when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(userSettingsService.getSettings(DEVICE_ID)).thenReturn(activeSettings());
         when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(
                 SnoozeEntity.builder().deviceId(DEVICE_ID).active(true).option(SnoozeOptionEnum.INDEFINITE).build()));
 
@@ -142,6 +180,7 @@ class NotificationServiceTest {
     void dadaSonecaTemporariaAtiva_quandoGatilhoAvaliado_entaoNaoNotificar() {
         LocalDateTime deadline = LocalDateTime.now().plusMinutes(10);
         when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(userSettingsService.getSettings(DEVICE_ID)).thenReturn(activeSettings());
         when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(
                 SnoozeEntity.builder()
                         .deviceId(DEVICE_ID)
@@ -162,7 +201,9 @@ class NotificationServiceTest {
     @DisplayName("Não deve notificar quando o dispositivo está no perímetro")
     void dadoDispositivoDentroDoPerimetro_quandoGatilhoAvaliado_entaoNaoNotificar() {
         when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(groupedItems(2));
+        when(userSettingsService.getSettings(DEVICE_ID)).thenReturn(activeSettings());
         when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
+        when(residenceService.getResidence(DEVICE_ID)).thenReturn(activeResidence());
         when(residenceService.checkGeofenceStatus(eq(DEVICE_ID), any(GeofenceCheckRequestDTO.class))).thenReturn(
                 new GeofenceCheckResponseDTO(true, 50, 150, "Dispositivo dentro do perímetro residencial (150m)"));
 
@@ -180,7 +221,9 @@ class NotificationServiceTest {
                 1L, "Leite", "1 L", null, false, null);
         ShoppingListGroupedDTO items = new ShoppingListGroupedDTO(1, List.of(pendingItem), 0, List.of());
         when(shoppingItemService.getGroupedItems(DEVICE_ID)).thenReturn(items);
+        when(userSettingsService.getSettings(DEVICE_ID)).thenReturn(activeSettings());
         when(snoozeRepository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.empty());
+        when(residenceService.getResidence(DEVICE_ID)).thenReturn(activeResidence());
         when(residenceService.checkGeofenceStatus(eq(DEVICE_ID), any(GeofenceCheckRequestDTO.class))).thenReturn(
                 new GeofenceCheckResponseDTO(false, 500, 150, "Afastamento de 500m da residência detectado (limite: 150m)"));
 
@@ -206,6 +249,15 @@ class NotificationServiceTest {
 
     private NotificationTriggerRequestDTO request() {
         return new NotificationTriggerRequestDTO(-23.5, -46.6);
+    }
+
+    private UserSettingsResponseDTO activeSettings() {
+        return new UserSettingsResponseDTO(1L, true, true,
+                NotificationPermissionEnum.PERMITIDO, LocationPermissionEnum.SEMPRE_PERMITIDA);
+    }
+
+    private ResidenceResponseDTO activeResidence() {
+        return new ResidenceResponseDTO(1L, "Rua das Flores", null, -23.5, -46.6, 150, true);
     }
 
     private ShoppingListGroupedDTO groupedItems(long count) {

@@ -56,12 +56,14 @@ public class UserSettingsService {
                 .orElseGet(() -> createDefaultSettings(deviceId));
 
         boolean residenceConfigured = false;
+        boolean geofenceActive = false;
         String statusMessage = "Residência não configurada";
 
         try {
             ResidenceResponseDTO residence = residenceService.getResidence(deviceId);
             if (residence != null) {
                 residenceConfigured = true;
+                geofenceActive = residence.geofenceActive();
                 statusMessage = residence.geofenceActive() 
                         ? "Monitoramento Geofence Ativo" 
                         : "Monitoramento Desativado";
@@ -70,9 +72,11 @@ public class UserSettingsService {
             // Se a residência ainda não foi cadastrada para este dispositivo, mantemos a mensagem padrão
         }
 
-        boolean isReady = settings.getNotificationPermission() == NotificationPermissionEnum.PERMITIDO
+        boolean isReady = settings.isRemindOnLeave()
+                && settings.getNotificationPermission() == NotificationPermissionEnum.PERMITIDO
                 && settings.getLocationPermission() == LocationPermissionEnum.SEMPRE_PERMITIDA
-                && residenceConfigured;
+                && residenceConfigured
+                && geofenceActive;
 
         return new SystemDiagnosticResponseDTO(
                 isReady,
@@ -91,8 +95,8 @@ public class UserSettingsService {
                 .deviceId(deviceId)
                 .remindOnLeave(true)
                 .vibrateOnNotify(true)
-                .notificationPermission(NotificationPermissionEnum.PERMITIDO)
-                .locationPermission(LocationPermissionEnum.SEMPRE_PERMITIDA)
+                .notificationPermission(NotificationPermissionEnum.NEGADO)
+                .locationPermission(LocationPermissionEnum.NEGADO)
                 .build();
         return repository.save(defaultSettings);
     }

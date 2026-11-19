@@ -164,6 +164,14 @@ class SmartListApiFlowsL1Test {
                 .andExpect(jsonPath("$.address").value("Rua das Flores"));
         criaItem("Leite", "1 L", "LATICINIOS");
 
+        mockMvc.perform(deviceHeader(put("/api/v1/settings"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"remindOnLeave":true,"vibrateOnNotify":true,
+                                 "notificationPermission":"PERMITIDO","locationPermission":"SEMPRE_PERMITIDA"}
+                                """))
+                .andExpect(status().isOk());
+
         mockMvc.perform(deviceHeader(post("/api/v1/notifications/trigger-check"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(coordenadasJson(-23.5, -46.61)))
@@ -223,7 +231,7 @@ class SmartListApiFlowsL1Test {
         mockMvc.perform(deviceHeader(get("/api/v1/settings")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.remindOnLeave").value(true))
-                .andExpect(jsonPath("$.notificationPermission").value("PERMITIDO"));
+                .andExpect(jsonPath("$.notificationPermission").value("NEGADO"));
 
         mockMvc.perform(deviceHeader(put("/api/v1/settings"))
                         .contentType(MediaType.APPLICATION_JSON)

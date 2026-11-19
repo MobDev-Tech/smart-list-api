@@ -57,8 +57,8 @@ class UserSettingsServiceTest {
         assertEquals(1L, result.id());
         assertTrue(result.remindOnLeave());
         assertTrue(result.vibrateOnNotify());
-        assertEquals(NotificationPermissionEnum.PERMITIDO, result.notificationPermission());
-        assertEquals(LocationPermissionEnum.SEMPRE_PERMITIDA, result.locationPermission());
+        assertEquals(NotificationPermissionEnum.NEGADO, result.notificationPermission());
+        assertEquals(LocationPermissionEnum.NEGADO, result.locationPermission());
     }
 
     @Test
@@ -126,7 +126,7 @@ class UserSettingsServiceTest {
         SystemDiagnosticResponseDTO result = service.getDiagnostic(DEVICE_ID);
 
         assertTrue(result.isResidenceConfigured());
-        assertTrue(result.isSystemReady());
+        assertFalse(result.isSystemReady());
         assertEquals("Monitoramento Desativado", result.residenceStatusMessage());
     }
 

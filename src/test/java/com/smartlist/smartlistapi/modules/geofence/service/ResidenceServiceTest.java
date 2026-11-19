@@ -68,7 +68,7 @@ class ResidenceServiceTest {
             return saved;
         });
         ResidenceRequestDTO request = new ResidenceRequestDTO(
-                "Rua das Flores", "Casa 2", -23.5, -46.6, null);
+                "Rua das Flores", "Casa 2", -23.5, -46.6, null, null);
 
         ResidenceResponseDTO result = service.saveOrUpdateResidence(DEVICE_ID, request);
 
@@ -86,13 +86,13 @@ class ResidenceServiceTest {
         when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(residence));
         when(repository.save(residence)).thenReturn(residence);
         ResidenceRequestDTO request = new ResidenceRequestDTO(
-                "Avenida Central", null, -22.9, -43.2, false);
+                "Avenida Central", null, -22.9, -43.2, false, 300);
 
         ResidenceResponseDTO result = service.saveOrUpdateResidence(DEVICE_ID, request);
 
         assertEquals("Avenida Central", result.address());
         assertEquals(-22.9, result.latitude());
-        assertEquals(150, result.radiusMeters());
+        assertEquals(300, result.radiusMeters());
         assertFalse(result.geofenceActive());
         verify(repository).save(residence);
     }
@@ -123,6 +123,20 @@ class ResidenceServiceTest {
         assertEquals(1019.72, result.distanceFromHomeMeters(), 0.1);
         assertEquals(150, result.allowedRadiusMeters());
         assertEquals("Afastamento de 1020m da residência detectado (limite: 150m)", result.statusMessage());
+    }
+
+    @Test
+    @DisplayName("Deve usar o raio configurado ao avaliar o perímetro")
+    void dadoRaioDeDuzentosMetros_quandoDispositivoA180Metros_entaoIndicarDentro() {
+        ResidenceEntity residence = residence();
+        residence.setRadiusMeters(200);
+        when(repository.findByDeviceId(DEVICE_ID)).thenReturn(Optional.of(residence));
+
+        GeofenceCheckResponseDTO result = service.checkGeofenceStatus(
+                DEVICE_ID, new GeofenceCheckRequestDTO(-23.5, -46.6018));
+
+        assertTrue(result.insidePerimeter());
+        assertEquals(200, result.allowedRadiusMeters());
     }
 
     @Test
