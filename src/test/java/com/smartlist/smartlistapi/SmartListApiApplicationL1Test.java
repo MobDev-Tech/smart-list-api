@@ -35,7 +35,12 @@ class SmartListApiApplicationL1Test {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.info.title").value("Smart List API"))
 			.andExpect(jsonPath("$.paths['/api/v1/shopping-items'].get").exists())
-			.andExpect(jsonPath("$.paths['/api/v1/residence'].post").exists());
+			.andExpect(jsonPath("$.paths['/api/v1/residence'].post").exists())
+			.andExpect(jsonPath("$.components.securitySchemes.ApiKeyAuth.type").value("apiKey"))
+			.andExpect(jsonPath("$.components.securitySchemes.ApiKeyAuth.in").value("header"))
+			.andExpect(jsonPath("$.components.securitySchemes.ApiKeyAuth.name").value("X-API-Key"))
+			.andExpect(jsonPath("$.paths['/api/v1/shopping-items'].get.security[0].ApiKeyAuth").exists())
+			.andExpect(jsonPath("$.paths['/api/v1/health'].get.security").doesNotExist());
 	}
 
 }
