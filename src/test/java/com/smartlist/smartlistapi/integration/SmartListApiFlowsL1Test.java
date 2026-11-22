@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SmartListApiFlowsL1Test {
 
     private static final String DEVICE_ID = "device-1";
+    private static final String API_KEY = "integration-test-api-key";
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,6 +45,29 @@ class SmartListApiFlowsL1Test {
         jdbcTemplate.update("DELETE FROM snooze_settings");
         jdbcTemplate.update("DELETE FROM residences");
         jdbcTemplate.update("DELETE FROM user_settings");
+    }
+
+    @Test
+    @DisplayName("Deve rejeitar chamadas sem chave ou com chave inválida")
+    void dadaChaveApiAusenteOuInvalida_quandoAcessaRotaDeNegocio_entaoRetornarNaoAutorizado() throws Exception {
+        mockMvc.perform(get("/api/v1/shopping-items")
+                        .header("X-Device-ID", DEVICE_ID))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Chave de API ausente ou inválida."));
+
+        mockMvc.perform(get("/api/v1/shopping-items")
+                        .header("X-Device-ID", DEVICE_ID)
+                        .header("X-API-Key", "invalid-api-key"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Chave de API ausente ou inválida."));
+    }
+
+    @Test
+    @DisplayName("Deve manter o health check público")
+    void dadoHealthCheck_quandoConsultadoSemChaveApi_entaoRetornarDisponibilidade() throws Exception {
+        mockMvc.perform(get("/api/v1/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
     }
 
     @Test
@@ -294,7 +318,9 @@ class SmartListApiFlowsL1Test {
     }
 
     private MockHttpServletRequestBuilder deviceHeader(MockHttpServletRequestBuilder builder) {
-        return builder.header("X-Device-ID", DEVICE_ID);
+        return builder
+                .header("X-Device-ID", DEVICE_ID)
+                .header("X-API-Key", API_KEY);
     }
 
     private String residenciaJson(boolean geofenceAtivo) {

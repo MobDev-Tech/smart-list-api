@@ -46,10 +46,15 @@ Configure principalmente:
 | `POSTGRES_USER` e `POSTGRES_PASSWORD` | Usuário e senha do PostgreSQL. Defina uma senha antes de iniciar os containers. |
 | `PGADMIN_EMAIL` e `PGADMIN_PASSWORD` | Credenciais para entrar no pgAdmin. |
 | `DB_URL` | URL JDBC usada pela aplicação quando executada fora do Docker. Ao usar o PostgreSQL do Compose, use `jdbc:postgresql://localhost:5433/<POSTGRES_DB>`. |
+| `API_KEY` | Chave aleatória exigida nas rotas de negócio da API. Não use um valor de exemplo nem versione o segredo. |
 
-O `.env` é opcional para executar a aplicação diretamente, pois o código o carrega quando está presente e a configuração possui valores padrão. Para conectar a aplicação local ao PostgreSQL do Docker, configure `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` de acordo com o banco. Dentro do Docker Compose, a API conecta-se ao serviço `postgres` pela rede interna; não use `localhost` na URL JDBC do container.
+Configure `API_KEY` no `.env` local ou como variável de ambiente no serviço de deploy. A aplicação não inicia se a chave estiver ausente ou vazia. Para conectar a aplicação local ao PostgreSQL do Docker, configure `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` de acordo com o banco. Dentro do Docker Compose, a API conecta-se ao serviço `postgres` pela rede interna; não use `localhost` na URL JDBC do container.
 
 Não compartilhe nem versione o `.env`: ele pode conter credenciais. O arquivo está listado no `.gitignore`.
+
+As rotas de negócio exigem o cabeçalho `X-API-Key` e continuam exigindo `X-Device-ID`. A raiz, o health check e a documentação OpenAPI permanecem públicos. No Swagger UI, use **Authorize** para informar a chave antes de executar uma operação protegida.
+
+> A chave compartilhada é uma barreira adicional, não autentica usuários individualmente. Não a inclua em um frontend público (web ou mobile): chaves enviadas pelo cliente podem ser extraídas. Para esses clientes, considere autenticação por usuário e tokens individuais.
 
 ## ▶️ Rodando o projeto
 
@@ -117,6 +122,7 @@ O Swagger documenta os endpoints implementados, seus parâmetros, corpos de requ
 
 A API está publicada no Render: [https://smart-list-api.onrender.com](https://smart-list-api.onrender.com).
 Você também pode acessar a documentação interativa do Swagger em [https://smart-list-api.onrender.com/swagger-ui.html](https://smart-list-api.onrender.com/swagger-ui.html).
+Configure `API_KEY` nas variáveis de ambiente do serviço no Render. Não coloque a chave no repositório nem em configurações entregues ao frontend.
 
 ## 🧪 Executando os testes
 
