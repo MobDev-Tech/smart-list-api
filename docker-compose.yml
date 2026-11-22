@@ -30,6 +30,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      API_KEY: "${API_KEY:?Defina API_KEY no arquivo .env}"
     networks:
       - smart-list-net
 
